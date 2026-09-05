@@ -1,38 +1,64 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { statuses, type ClientStatus } from "@/lib/client-status";
-import type { ListState } from "@/lib/clients";
+import type { ClientSort, ListState } from "@/lib/clients";
+
+const clientSorts: ClientSort[] = ["alphabetical", "name-desc", "status-asc", "status-desc", "recent", "oldest"];
 
 export function ClientListControls({ state }: { state: ListState }) {
   const router = useRouter();
-  const [query, setQuery] = useState(state.query);
-  const [status, setStatus] = useState(state.status);
+  const searchParams = useSearchParams();
+  const input = useRef<HTMLInputElement>(null);
   const timeout = useRef<number | undefined>(undefined);
+  const query = searchParams.get("query") ?? state.query;
+  useEffect(() => { if (input.current) input.current.value = query; }, [query]);
+  useEffect(() => () => window.clearTimeout(timeout.current), []);
+  const selectedStatuses = (searchParams.get("status") ?? state.statuses.join(","))
+    .split(",")
+    .filter((status): status is ClientStatus => statuses.includes(status as ClientStatus));
+  const sortParam = searchParams.get("sort");
+  const sort: ClientSort = clientSorts.includes(sortParam as ClientSort)
+    ? (sortParam as ClientSort)
+    : state.sort;
 
-  function navigate(nextQuery: string, nextStatus: ListState["status"]) {
+  function navigate(nextQuery: string, nextStatuses: ClientStatus[], nextSort: ClientSort) {
+    window.clearTimeout(timeout.current);
     const params = new URLSearchParams();
     if (nextQuery.trim()) params.set("query", nextQuery.trim());
-    if (nextStatus !== "All") params.set("status", nextStatus);
+    if (nextStatuses.length) params.set("status", nextStatuses.join(","));
+    if (nextSort !== "recent") params.set("sort", nextSort);
     const suffix = params.toString();
     router.replace(suffix ? `/clients?${suffix}` : "/clients", { scroll: false });
   }
 
   function handleSearch(nextQuery: string) {
-    setQuery(nextQuery);
     window.clearTimeout(timeout.current);
-    timeout.current = window.setTimeout(() => navigate(nextQuery, status), 250);
+    timeout.current = window.setTimeout(() => navigate(nextQuery, selectedStatuses, sort), 250);
   }
 
-  function handleStatus(nextStatus: ListState["status"]) {
+  function handleStatus(status: ClientStatus, checked: boolean) {
     window.clearTimeout(timeout.current);
-    setStatus(nextStatus);
-    navigate(query, nextStatus);
+    const nextStatuses = checked
+      ? statuses.filter((candidate) => candidate === status || selectedStatuses.includes(candidate))
+      : selectedStatuses.filter((candidate) => candidate !== status);
+    navigate(input.current?.value ?? query, nextStatuses, sort);
   }
 
-  const hasFilters = Boolean(query || status !== "All");
+  function clear() {
+    window.clearTimeout(timeout.current);
+    if (input.current) input.current.value = "";
+    navigate("", [], "recent");
+  }
+
+  const hasFilters = Boolean(query || selectedStatuses.length || sort !== "recent");
+  const statusLabel = selectedStatuses.length === 0 || selectedStatuses.length === statuses.length
+    ? "All"
+    : selectedStatuses.length === 1
+      ? selectedStatuses[0]
+      : `${selectedStatuses.length} selected`;
 
   return (
     <div className="list-controls" role="search">
@@ -40,25 +66,41 @@ export function ClientListControls({ state }: { state: ListState }) {
         <span className="visually-hidden">Search by student name</span>
         <svg className="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
         <input
+          defaultValue={query}
           name="query"
           onChange={(event) => handleSearch(event.target.value)}
           placeholder="Search by student name…"
-          value={query}
+          ref={input}
         />
       </label>
-      <label className="filter-field">
-        <span className="filter-label">Status:</span>
-        <select
-          name="status"
-          onChange={(event) => handleStatus(event.target.value as "All" | ClientStatus)}
-          value={status}
-        >
-          <option value="All">All</option>
-          {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
+      <details className="filter-menu">
+        <summary>Status: <strong>{statusLabel}</strong></summary>
+        <div className="filter-checklist">
+          {statuses.map((status) => (
+            <label key={status}>
+              <input
+                checked={selectedStatuses.includes(status)}
+                onChange={(event) => handleStatus(status, event.target.checked)}
+                type="checkbox"
+              />
+              <span>{status}</span>
+            </label>
+          ))}
+        </div>
+      </details>
+      <label className="sort-field">
+        <span>Sort:</span>
+        <select value={sort} onChange={(event) => navigate(input.current?.value ?? query, selectedStatuses, event.target.value as ClientSort)}>
+          <option value="alphabetical">Alphabetical A–Z</option>
+          <option value="name-desc">Alphabetical Z–A</option>
+          <option value="status-asc">Status A–Z</option>
+          <option value="status-desc">Status Z–A</option>
+          <option value="recent">Most recent</option>
+          <option value="oldest">Oldest</option>
         </select>
       </label>
       {hasFilters ? (
-        <button className="clear-link" onClick={() => navigate("", "All")} type="button">Clear</button>
+        <button className="clear-link" onClick={clear} type="button">Clear</button>
       ) : null}
     </div>
   );

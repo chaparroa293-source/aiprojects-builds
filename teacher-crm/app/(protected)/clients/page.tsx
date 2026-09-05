@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { ClientListControls } from "@/components/client-list-controls";
 import { StatusChip } from "@/components/status-chip";
-import { getClients, listStateFromSearchParams, listStateQuery } from "@/lib/clients";
+import { getClients, getClientCount, listStateFromSearchParams, listStateQuery } from "@/lib/clients";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +17,10 @@ export default async function ClientsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const state = listStateFromSearchParams(await searchParams);
-  const clients = await getClients(state);
+  const [clients, total] = await Promise.all([getClients(state), getClientCount()]);
   const query = listStateQuery(state);
   const newHref = `/clients/new${query ? `?returnTo=${encodeURIComponent(`/clients?${query}`)}` : ""}`;
-  const hasFilters = Boolean(state.query || state.status !== "All");
+  const hasFilters = Boolean(state.query || state.statuses.length || state.sort !== "recent");
 
   return (
     <section className="clients-page" aria-labelledby="clients-title">
@@ -40,14 +40,14 @@ export default async function ClientsPage({
         </section>
       ) : (
         <>
-          <ClientListControls key={query} state={state} />
+          <ClientListControls state={state} />
 
           <div className="table-frame">
             <table>
               <thead>
                 <tr>
-                  <th>Student Name</th>
-                  <th>Status</th>
+                  <th aria-sort={state.sort === "alphabetical" ? "ascending" : state.sort === "name-desc" ? "descending" : "none"}><Link className="sortable-heading" href={`/clients?${listStateQuery({ ...state, sort: state.sort === "alphabetical" ? "name-desc" : "alphabetical" })}`} scroll={false}>Student Name <span aria-hidden="true">{state.sort === "alphabetical" ? "↑" : state.sort === "name-desc" ? "↓" : "↕"}</span></Link></th>
+                  <th aria-sort={state.sort === "status-asc" ? "ascending" : state.sort === "status-desc" ? "descending" : "none"}><Link className="sortable-heading" href={`/clients?${listStateQuery({ ...state, sort: state.sort === "status-asc" ? "status-desc" : "status-asc" })}`} scroll={false}>Status <span aria-hidden="true">{state.sort === "status-asc" ? "↑" : state.sort === "status-desc" ? "↓" : "↕"}</span></Link></th>
                   <th>Payer / Contact</th>
                   <th>Phone</th>
                   <th>School</th>
@@ -79,9 +79,9 @@ export default async function ClientsPage({
               </div>
             ) : null}
           </div>
-          {clients.length > 0 ? <p className="result-count">{clients.length} {clients.length === 1 ? "client" : "clients"}</p> : null}
         </>
       )}
+      <p className="result-count">Showing {clients.length}{(state.query || state.statuses.length > 0) && clients.length < total ? ` of ${total}` : ""} clients</p>
     </section>
   );
 }

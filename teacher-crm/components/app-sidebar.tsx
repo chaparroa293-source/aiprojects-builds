@@ -1,15 +1,19 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 import { signOut } from "@/app/auth-actions";
 
 type NavName = "Dashboard" | "Clients" | "Schedule" | "Payments" | "Analytics";
 
-const navItems: Array<{ label: NavName; active: boolean }> = [
-  { label: "Dashboard", active: false },
-  { label: "Clients", active: true },
-  { label: "Schedule", active: false },
-  { label: "Payments", active: false },
-  { label: "Analytics", active: false },
+const navItems: Array<{ label: NavName; href?: string }> = [
+  { label: "Dashboard" },
+  { label: "Clients", href: "/clients" },
+  { label: "Schedule", href: "/schedule" },
+  { label: "Payments" },
+  { label: "Analytics" },
 ];
 
 function NavIcon({ name }: { name: NavName }) {
@@ -25,29 +29,37 @@ function NavIcon({ name }: { name: NavName }) {
 }
 
 export function AppSidebar({ email }: { email: string | undefined }) {
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${collapsed ? " sidebar-collapsed" : ""}`}>
       <div>
-        <Link href="/clients" className="brand">Teacher CRM</Link>
+        <Link href="/clients" className="brand" aria-label="Teacher CRM"><span className="brand-full">Teacher CRM</span><svg className="brand-compact" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M12 5v15M12 6C9 3 5 3 2 4v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 2Z" /></svg></Link>
         <nav aria-label="Primary navigation" className="main-nav">
-          {navItems.map((item) => item.active ? (
-            <Link href="/clients" className="nav-item nav-active" aria-current="page" key={item.label}>
+          {navItems.map((item) => item.href ? (
+            <Link href={item.href} className={`nav-item${pathname.startsWith(item.href) ? " nav-active" : ""}`} aria-current={pathname.startsWith(item.href) ? "page" : undefined} aria-label={item.label} title={collapsed ? item.label : undefined} key={item.label}>
               <NavIcon name={item.label} />
-              <span>{item.label}</span>
+              <span className="nav-label">{item.label}</span>
             </Link>
           ) : (
-            <span className="nav-item nav-disabled" aria-disabled="true" key={item.label}>
+            <span className="nav-item nav-disabled" aria-disabled="true" title={collapsed ? `${item.label} unavailable` : undefined} key={item.label}>
               <NavIcon name={item.label} />
-              <span>{item.label}</span>
+              <span className="nav-label">{item.label}</span>
             </span>
           ))}
         </nav>
       </div>
-      <form action={signOut} className="account-area">
-        <span className="account-avatar" aria-hidden="true">T</span>
-        <span className="account-copy"><strong>Tutor</strong><span>{email ?? "Tutor account"}</span></span>
-        <button className="sidebar-logout" type="submit">Log out</button>
-      </form>
+      <div className="sidebar-bottom">
+        <button className="sidebar-toggle" type="button" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <form action={signOut} className="account-area">
+          <span className="account-avatar" aria-hidden="true">T</span>
+          <span className="account-copy"><strong>Tutor</strong><span>{email ?? "Tutor account"}</span></span>
+          <button className="sidebar-logout" type="submit" aria-label="Log out" title={collapsed ? "Log out" : undefined}><span className="logout-icon" aria-hidden="true">↪</span><span className="logout-label">Log out</span></button>
+        </form>
+      </div>
     </aside>
   );
 }

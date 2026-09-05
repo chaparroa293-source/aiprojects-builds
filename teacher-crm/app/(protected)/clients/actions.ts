@@ -52,6 +52,18 @@ export async function createClientRecord(formData: FormData) {
   redirect(returnTo);
 }
 
+export async function createClientInline(formData: FormData) {
+  const { supabase, user } = await currentUser();
+  const { data, error } = await supabase
+    .from("clients")
+    .insert({ ...clientValues(formData), user_id: user.id })
+    .select("id, student_name")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/clients");
+  return data as { id: string; student_name: string };
+}
+
 export async function updateClientRecord(id: string, formData: FormData) {
   const { supabase } = await currentUser();
   const { error } = await supabase.from("clients").update(clientValues(formData)).eq("id", id);
