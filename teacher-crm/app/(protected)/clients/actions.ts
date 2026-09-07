@@ -6,6 +6,10 @@ import { redirect } from "next/navigation";
 import { statuses, type ClientStatus } from "@/lib/client-status";
 import { createClient } from "@/lib/supabase/server";
 
+export type ClientActionState = { error: string };
+
+class ClientInputError extends Error {}
+
 function optional(formData: FormData, name: string) {
   const value = String(formData.get(name) ?? "").trim();
   return value || null;
@@ -18,10 +22,10 @@ function safeReturnPath(formData: FormData) {
 
 function clientValues(formData: FormData) {
   const status = String(formData.get("status") ?? "Prospect");
-  if (!statuses.includes(status as ClientStatus)) throw new Error("Invalid client status.");
+  if (!statuses.includes(status as ClientStatus)) throw new ClientInputError("Choose a valid client status.");
 
   const studentName = String(formData.get("student_name") ?? "").trim();
-  if (!studentName) throw new Error("Student Name is required.");
+  if (!studentName) throw new ClientInputError("Student Name is required.");
 
   return {
     student_name: studentName,
@@ -42,13 +46,20 @@ async function currentUser() {
   return { supabase, user };
 }
 
-export async function createClientRecord(formData: FormData) {
+export async function createClientRecord(_state: ClientActionState, formData: FormData): Promise<ClientActionState> {
   const { supabase, user } = await currentUser();
-  const { error } = await supabase.from("clients").insert({ ...clientValues(formData), user_id: user.id });
-  if (error) throw new Error(error.message);
+  let values;
+  try { values = clientValues(formData); } catch (error) {
+    if (error instanceof ClientInputError) return { error: error.message };
+    throw error;
+  }
+  const { error } = await supabase.from("clients").insert({ ...values, user_id: user.id });
+  if (error) return { error: "Client could not be saved. Check your connection and try again." };
 
   const returnTo = safeReturnPath(formData);
   revalidatePath("/clients");
+  revalidatePath("/home");
+  revalidatePath("/dashboard");
   redirect(returnTo);
 }
 
@@ -61,16 +72,26 @@ export async function createClientInline(formData: FormData) {
     .single();
   if (error) throw new Error(error.message);
   revalidatePath("/clients");
+  revalidatePath("/home");
+  revalidatePath("/dashboard");
   return data as { id: string; student_name: string };
 }
 
-export async function updateClientRecord(id: string, formData: FormData) {
+export async function updateClientRecord(id: string, _state: ClientActionState, formData: FormData): Promise<ClientActionState> {
   const { supabase } = await currentUser();
-  const { error } = await supabase.from("clients").update(clientValues(formData)).eq("id", id);
-  if (error) throw new Error(error.message);
+  let values;
+  try { values = clientValues(formData); } catch (error) {
+    if (error instanceof ClientInputError) return { error: error.message };
+    throw error;
+  }
+  const { data, error } = await supabase.from("clients").update(values).eq("id", id).select("id").maybeSingle();
+  if (error) return { error: "Client could not be saved. Check your connection and try again." };
+  if (!data) return { error: "This client no longer exists. Return to Clients and reload." };
 
   const returnTo = safeReturnPath(formData);
   revalidatePath("/clients");
+  revalidatePath("/home");
+  revalidatePath("/dashboard");
   revalidatePath(`/clients/${id}`);
   redirect(returnTo);
 }
@@ -85,6 +106,8 @@ export async function updateClientStatus(id: string, formData: FormData) {
 
   const returnTo = safeReturnPath(formData);
   revalidatePath("/clients");
+  revalidatePath("/home");
+  revalidatePath("/dashboard");
   revalidatePath(`/clients/${id}`);
   redirect(returnTo);
 }

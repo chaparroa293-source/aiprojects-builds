@@ -6,23 +6,23 @@ import { useState } from "react";
 
 import { signOut } from "@/app/auth-actions";
 
-type NavName = "Dashboard" | "Clients" | "Schedule" | "Payments" | "Analytics";
+type NavName = "Home" | "Clients" | "Schedule" | "Payments" | "Dashboard";
 
 const navItems: Array<{ label: NavName; href?: string }> = [
-  { label: "Dashboard" },
+  { label: "Home", href: "/home" },
   { label: "Clients", href: "/clients" },
   { label: "Schedule", href: "/schedule" },
-  { label: "Payments" },
-  { label: "Analytics" },
+  { label: "Payments", href: "/payments" },
+  { label: "Dashboard", href: "/dashboard" },
 ];
 
 function NavIcon({ name }: { name: NavName }) {
   const paths: Record<NavName, React.ReactNode> = {
-    Dashboard: <><path d="m3 11 9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></>,
+    Home: <><path d="m3 11 9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></>,
     Clients: <><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-2.2A4.8 4.8 0 0 1 8.3 13h1.4a4.8 4.8 0 0 1 4.8 4.8V20"/><path d="M16 5.5a3 3 0 0 1 0 5.8M17 14a4.5 4.5 0 0 1 4 4.5V20"/></>,
     Schedule: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></>,
     Payments: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M7 15h4"/></>,
-    Analytics: <><path d="M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7M2 20h20"/></>,
+    Dashboard: <><path d="M4 20V10h4v10M10 20V4h4v16M16 20v-7h4v7M2 20h20"/></>,
   };
 
   return <svg className="nav-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
@@ -35,10 +35,10 @@ export function AppSidebar({ email }: { email: string | undefined }) {
   return (
     <aside className={`sidebar${collapsed ? " sidebar-collapsed" : ""}`}>
       <div>
-        <Link href="/clients" className="brand" aria-label="Teacher CRM"><span className="brand-full">Teacher CRM</span><svg className="brand-compact" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M12 5v15M12 6C9 3 5 3 2 4v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 2Z" /></svg></Link>
+        <Link href="/home" className="brand" aria-label="Teacher CRM"><span className="brand-full"><span className="brand-caption">A little space for</span>Teacher CRM<span className="brand-subtitle">Your teaching, together.</span></span><svg className="brand-compact" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M12 5v15M12 6C9 3 5 3 2 4v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 2Z" /></svg></Link>
         <nav aria-label="Primary navigation" className="main-nav">
           {navItems.map((item) => item.href ? (
-            <Link href={item.href} className={`nav-item${pathname.startsWith(item.href) ? " nav-active" : ""}`} aria-current={pathname.startsWith(item.href) ? "page" : undefined} aria-label={item.label} title={collapsed ? item.label : undefined} key={item.label}>
+            <Link href={item.href} className={`nav-item${item.label === "Dashboard" ? " nav-review" : ""}${pathname.startsWith(item.href) ? " nav-active" : ""}`} aria-current={pathname.startsWith(item.href) ? "page" : undefined} aria-label={item.label} title={collapsed ? item.label : undefined} key={item.label}>
               <NavIcon name={item.label} />
               <span className="nav-label">{item.label}</span>
             </Link>

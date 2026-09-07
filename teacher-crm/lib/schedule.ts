@@ -12,7 +12,7 @@ function normalizeClass(value: RawClass): TutoringClass {
   };
 }
 
-const classSelection = "id, client_id, class_date, start_time, duration_minutes, status, class_topic, notes, created_at, client:clients!classes_client_owner_fkey(student_name)";
+const classSelection = "id, client_id, payment_id, class_date, start_time, duration_minutes, status, class_topic, notes, created_at, client:clients!classes_client_owner_fkey(student_name)";
 
 export async function getWeekClasses(weekStart: string) {
   const supabase = await createClient();
@@ -26,6 +26,31 @@ export async function getWeekClasses(weekStart: string) {
 
   if (error) throw new Error(error.message);
   return ((data ?? []) as unknown as RawClass[]).map(normalizeClass);
+}
+
+export async function getHomeClasses(today: string) {
+  const supabase = await createClient();
+  const [todayResult, attentionResult] = await Promise.all([
+    supabase
+      .from("classes")
+      .select(classSelection)
+      .eq("class_date", today)
+      .order("start_time", { ascending: true }),
+    supabase
+      .from("classes")
+      .select(classSelection)
+      .lte("class_date", today)
+      .or("status.eq.Scheduled,payment_id.is.null")
+      .order("class_date", { ascending: false })
+      .order("start_time", { ascending: false }),
+  ]);
+
+  if (todayResult.error) throw new Error(todayResult.error.message);
+  if (attentionResult.error) throw new Error(attentionResult.error.message);
+  return {
+    todayClasses: ((todayResult.data ?? []) as unknown as RawClass[]).map(normalizeClass),
+    attentionCandidates: ((attentionResult.data ?? []) as unknown as RawClass[]).map(normalizeClass),
+  };
 }
 
 export async function getTutoringClass(id: string) {

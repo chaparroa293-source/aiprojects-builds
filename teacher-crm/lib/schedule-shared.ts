@@ -13,6 +13,7 @@ export const weekdays = [
 ] as const;
 
 export type TutoringClass = {
+  payment_id: string | null;
   id: string;
   client_id: string;
   class_date: string;
@@ -74,13 +75,42 @@ export function nowInProductTimezone() {
   return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
 }
 
+export function isClassPaymentStatusRelevant(
+  tutoringClass: Pick<TutoringClass, "class_date" | "start_time" | "status">,
+  now = nowInProductTimezone(),
+) {
+  return tutoringClass.status === "Completed" || hasClassTimeArrived(tutoringClass, now);
+}
+
+export function hasClassTimeArrived(
+  tutoringClass: Pick<TutoringClass, "class_date" | "start_time">,
+  now = nowInProductTimezone(),
+) {
+  return `${tutoringClass.class_date}T${formatTime(tutoringClass.start_time)}` <= now;
+}
+
+export function isClassOutcomeUnresolved(
+  tutoringClass: Pick<TutoringClass, "class_date" | "start_time" | "status">,
+  now = nowInProductTimezone(),
+) {
+  return tutoringClass.status === "Scheduled" && hasClassTimeArrived(tutoringClass, now);
+}
+
 export function startOfWeek(date: string) {
   const day = utcDate(date).getUTCDay() || 7;
   return addDays(date, 1 - day);
 }
 
 export function validDate(value: string | undefined) {
-  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value) && dateString(utcDate(value)) === value);
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = utcDate(value);
+  return Number.isFinite(date.getTime()) && dateString(date) === value;
+}
+
+export function classReturnPath(value: unknown) {
+  if (typeof value !== "string") return "/schedule";
+  if (value === "/home" || value === "/dashboard") return value;
+  return value.startsWith("/schedule") || value.startsWith("/clients") ? value : "/schedule";
 }
 
 export function formatDate(date: string, options?: Intl.DateTimeFormatOptions) {

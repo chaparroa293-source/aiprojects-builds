@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 
 import { createClassRecord, updateClassRecord } from "@/app/(protected)/schedule/actions";
 import { ClientSelector } from "@/components/client-selector";
 import { ClassStatusButtons } from "@/components/class-status-buttons";
 import { DeleteClassControl } from "@/components/delete-class-control";
+import { DrawerBackLink } from "@/components/drawer-back-link";
 import { NewClientInline } from "@/components/new-client-inline";
 import { SaveClassButton } from "@/components/save-class-button";
 import { dateForWeekdayOnOrAfter, formatTime, todayInProductTimezone, validDate, weekdayLabel, type ClientOption, type RegularScheduleSlot, type TutoringClass } from "@/lib/schedule-shared";
@@ -22,6 +23,7 @@ type Props = {
 
 export function ClassForm({ clients, slots, tutoringClass, initialClientId, initialDate, returnTo }: Props) {
   const action = tutoringClass ? updateClassRecord.bind(null, tutoringClass.id) : createClassRecord;
+  const [actionState, formAction, pending] = useActionState(action, { error: "" });
   const [clientOptions, setClientOptions] = useState(clients);
   const [clientId, setClientId] = useState(tutoringClass?.client_id ?? initialClientId ?? "");
   const [studentMode, setStudentMode] = useState<"existing" | "new">("existing");
@@ -44,13 +46,13 @@ export function ClassForm({ clients, slots, tutoringClass, initialClientId, init
 
   return (
     <section className="form-page" aria-labelledby="class-form-title">
-      {tutoringClass && <Link className="back-link form-back" href={returnTo}>‹ {returnTo.startsWith("/clients/") ? "Back to client" : "Back to Schedule"}</Link>}
+      <div className="drawer-topline"><DrawerBackLink href={returnTo} destination={returnTo === "/home" ? "Home" : returnTo === "/dashboard" ? "Dashboard" : returnTo.startsWith("/clients/") ? "Client" : "Schedule"} /></div>
       <div className="page-heading compact-heading"><div><p className="eyebrow">Schedule</p><h1 id="class-form-title">{tutoringClass ? "Edit class" : "Add class"}</h1><p>Times are shown in America/Asuncion.</p></div></div>
-      <form action={action} className="client-form">
+      <form action={formAction} className="client-form">
         <input type="hidden" name="returnTo" value={returnTo} />
         <fieldset aria-label="Class details"><div className="form-grid">
           {!tutoringClass && <div className="student-paths field-wide"><button type="button" className={studentMode === "existing" ? "student-path-active" : ""} onClick={() => setStudentMode("existing")}>Select existing student</button><button type="button" className={studentMode === "new" ? "student-path-active" : ""} onClick={() => setStudentMode("new")}>Create new student</button></div>}
-          {studentMode === "existing" || tutoringClass ? <ClientSelector clients={clientOptions} value={clientId} onChange={setClientId} /> : <NewClientInline onChooseExisting={() => setStudentMode("existing")} onCreated={(client) => { setClientOptions((current) => [...current, client].sort((a, b) => a.student_name.localeCompare(b.student_name))); setClientId(client.id); setStudentMode("existing"); }} />}
+          {tutoringClass?.payment_id ? <div className="field-wide"><span className="field-label">Client / Student</span><p>{tutoringClass.client.student_name}</p><input type="hidden" name="client_id" value={clientId} /><small className="field-hint">This class is linked to a payment. Remove its link in <Link className="text-button" href={`/payments/${tutoringClass.payment_id}/edit`}>Edit payment</Link> before changing the Client.</small></div> : studentMode === "existing" || tutoringClass ? <ClientSelector clients={clientOptions} value={clientId} onChange={setClientId} /> : <NewClientInline onChooseExisting={() => setStudentMode("existing")} onCreated={(client) => { setClientOptions((current) => [...current, client].sort((a, b) => a.student_name.localeCompare(b.student_name))); setClientId(client.id); setStudentMode("existing"); }} />}
           {!tutoringClass && availableSlots.length > 0 && <div className="field-wide quick-defaults"><span>Regular schedule defaults</span><div>{availableSlots.map((slot) => <button className="quick-default" type="button" onClick={() => applySlot(slot)} key={slot.id}>{weekdayLabel(slot.weekday)} · {formatTime(slot.start_time)} · {slot.duration_minutes} min</button>)}</div></div>}
           <label>Date <span className="required">Required</span><input type="date" name="class_date" value={date} onChange={(event) => setDate(event.target.value)} required /></label>
           <label>Start Time <span className="required">Required</span><input type="time" name="start_time" step={timeStep} value={startTime} onChange={(event) => setStartTime(event.target.value)} required /></label>
@@ -61,9 +63,10 @@ export function ClassForm({ clients, slots, tutoringClass, initialClientId, init
           <div className="field-wide"><span className="field-label">Class status</span><ClassStatusButtons value={status} onChange={setStatus} /></div>
         </div></fieldset>
         <fieldset><div className="form-grid"><label className="field-wide">Class name / topic<input name="class_topic" placeholder="For example, Math review" defaultValue={tutoringClass?.class_topic ?? ""} /></label><label className="field-wide">Notes<textarea name="notes" rows={4} defaultValue={tutoringClass?.notes ?? ""} /></label></div></fieldset>
-        <div className="form-actions"><Link className="button button-secondary" href={returnTo}>Cancel</Link><SaveClassButton disabled={!clientId || Number(duration) <= 0} /></div>
+        {actionState.error && <p className="form-error" role="alert">{actionState.error}</p>}
+        <div className="form-actions"><Link className="button button-secondary" href={returnTo}>Cancel</Link><SaveClassButton disabled={pending || !clientId || Number(duration) <= 0} /></div>
+        {tutoringClass && <div className="form-destructive-area"><DeleteClassControl id={tutoringClass.id} returnTo={returnTo} /></div>}
       </form>
-      {tutoringClass && <DeleteClassControl id={tutoringClass.id} returnTo={returnTo} />}
     </section>
   );
 }

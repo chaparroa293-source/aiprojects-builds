@@ -16,7 +16,7 @@ export default async function LoginPage({
         <h1 id="login-title">Welcome back</h1>
         <p className="login-intro">Sign in to manage your students and their information.</p>
         {error ? <p className="form-error" role="alert">{error}</p> : null}
-        <form action={signIn} className="stack-form">
+        <form action={signIn} className="stack-form" noValidate>
           <label>
             Email
             <input name="email" type="email" autoComplete="email" required />

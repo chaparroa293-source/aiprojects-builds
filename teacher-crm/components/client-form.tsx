@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 
 import { createClientRecord, updateClientRecord } from "@/app/(protected)/clients/actions";
-import { statuses } from "@/lib/client-status";
+import { ClientStatusButtons } from "@/components/client-status-buttons";
+import { DrawerBackLink } from "@/components/drawer-back-link";
 import type { Client } from "@/lib/clients";
 
 type Props = { client?: Client; returnTo: string };
 
 export function ClientForm({ client, returnTo }: Props) {
   const action = client ? updateClientRecord.bind(null, client.id) : createClientRecord;
+  const [actionState, formAction, pending] = useActionState(action, { error: "" });
   const title = client ? "Edit client" : "Add client";
   const grades = ["Preescolar", "1°", "2°", "3°", "4°", "5°", "6°", "7°", "8°", "9°", "1° Media", "2° Media", "3° Media", "Other"];
   const savedGrade = client?.grade_year ?? "";
@@ -21,9 +23,11 @@ export function ClientForm({ client, returnTo }: Props) {
   const [otherGrade, setOtherGrade] = useState(gradeValue === "Other" ? savedGrade : "");
   const [relationship, setRelationship] = useState(relationshipValue);
   const [otherRelationship, setOtherRelationship] = useState(relationshipValue === "Other" ? savedRelationship : "");
+  const [status, setStatus] = useState(client?.status ?? "Prospect");
 
   return (
     <section className="form-page" aria-labelledby="client-form-title">
+      <div className="drawer-topline"><DrawerBackLink href={returnTo} destination="Clients" /></div>
       <div className="page-heading compact-heading">
         <div>
           <p className="eyebrow">Clients</p>
@@ -31,7 +35,7 @@ export function ClientForm({ client, returnTo }: Props) {
           <p>{client ? "Update the student and contact information." : "Add a student and their tutoring relationship."}</p>
         </div>
       </div>
-      <form action={action} className="client-form">
+      <form action={formAction} className="client-form">
         <input type="hidden" name="returnTo" value={returnTo} />
         <fieldset>
           <legend>Identity</legend>
@@ -40,12 +44,7 @@ export function ClientForm({ client, returnTo }: Props) {
               Student Name <span className="required">Required</span>
               <input name="student_name" defaultValue={client?.student_name} required autoFocus />
             </label>
-            <label>
-              Status
-              <select name="status" defaultValue={client?.status ?? "Prospect"}>
-                {statuses.map((status) => <option value={status} key={status}>{status}</option>)}
-              </select>
-            </label>
+            <div className="field-wide"><span className="field-label">Status</span><ClientStatusButtons value={status} onChange={setStatus} /></div>
           </div>
         </fieldset>
         <fieldset>
@@ -81,9 +80,10 @@ export function ClientForm({ client, returnTo }: Props) {
             <textarea name="notes" rows={5} defaultValue={client?.notes ?? ""} />
           </label>
         </fieldset>
+        {actionState.error && <p className="form-error" role="alert">{actionState.error}</p>}
         <div className="form-actions">
           <Link className="button button-secondary" href={returnTo}>Cancel</Link>
-          <button className="button button-primary" type="submit">Save client</button>
+          <button className="button button-primary" type="submit" disabled={pending}>{pending ? "Saving…" : "Save client"}</button>
         </div>
       </form>
     </section>

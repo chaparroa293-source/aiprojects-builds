@@ -73,7 +73,7 @@ export function ClientListControls({ state }: { state: ListState }) {
           ref={input}
         />
       </label>
-      <details className="filter-menu">
+      <details className={`filter-menu${selectedStatuses.length ? " filter-selected" : ""}`}>
         <summary>Status: <strong>{statusLabel}</strong></summary>
         <div className="filter-checklist">
           {statuses.map((status) => (
