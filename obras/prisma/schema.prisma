@@ -1,0 +1,54 @@
+// Obras — esquema Prisma
+// Slice 1: solo el directorio (Clientes / Proveedores / Personal).
+// Proyectos, Segmentos y Gastos llegan en slices posteriores.
+//
+// Regla transversal: firm_id en TODAS las tablas desde el inicio
+// (una sola firma en v1, sin UI para cambiar de firma todavía).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id        String    @id @default(cuid())
+  firmId    String    @map("firm_id")
+  name      String
+  phone     String?
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([firmId])
+  @@map("clients")
+}
+
+model Supplier {
+  id        String    @id @default(cuid())
+  firmId    String    @map("firm_id")
+  name      String
+  phone     String?
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([firmId])
+  @@map("suppliers")
+}
+
+model Employee {
+  id        String    @id @default(cuid())
+  firmId    String    @map("firm_id")
+  name      String
+  phone     String?
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([firmId])
+  @@map("employees")
+}

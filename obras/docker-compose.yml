@@ -1,0 +1,18 @@
+# Postgres local para desarrollo de Obras.
+# Puerto 5433 en el host para no chocar con un Postgres 5432 ya instalado.
+services:
+  db:
+    image: postgres:16
+    container_name: obras-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: obras
+      POSTGRES_PASSWORD: obras
+      POSTGRES_DB: obras
+    ports:
+      - "5433:5432"
+    volumes:
+      - obras-db-data:/var/lib/postgresql/data
+
+volumes:
+  obras-db-data:
