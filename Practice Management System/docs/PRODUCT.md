@@ -1,5 +1,7 @@
 # Product
 
+The canonical logical contract for established objects and operations is [TECHNICAL_SPEC.md](../TECHNICAL_SPEC.md).
+
 ## Purpose
 
 Practice Management System is a reusable practice-management system for independent, session-based professionals, initially tutors and psychologists. It should help a professional operate, remember, and understand their practice without requiring administrative expertise.

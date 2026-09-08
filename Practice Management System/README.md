@@ -5,9 +5,18 @@ A reusable practice-management system for independent, session-based service pro
 ## Start here
 
 - [Product definition](docs/PRODUCT.md)
+- [Canonical technical specification](TECHNICAL_SPEC.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Environment map](docs/ENVIRONMENT.md)
 - [Build log](docs/BUILD_LOG.md)
+
+## Run locally
+
+```sh
+npm run dev
+```
+
+Use `npm run build` for the production build. Local configuration belongs in the ignored `.env.local`; variable names are in `.env.example`.
 
 ## Current state
 

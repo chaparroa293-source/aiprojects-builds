@@ -1,5 +1,7 @@
 # Database
 
+This document describes physical database implementation. The canonical logical contract is [TECHNICAL_SPEC.md](../TECHNICAL_SPEC.md).
+
 Supabase Postgres is selected for Slice 1. The database project is **AI Builds**, a shared Supabase project used by multiple independent applications. The local application connection is verified. Migration `database/migrations/20260908_create_clients.sql` has been applied.
 
 ## Current schema
