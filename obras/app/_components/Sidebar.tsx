@@ -30,11 +30,17 @@ export function Sidebar() {
       </nav>
 
       <nav className="sidebar-nav">
-        <div className="sidebar-section-label">Próximamente</div>
-        {/* Habilitados en slices posteriores del plan. */}
-        <span className="sidebar-link" data-disabled="true">
+        <div className="sidebar-section-label">Obra</div>
+        <Link
+          href="/proyectos"
+          className="sidebar-link"
+          data-active={
+            pathname === "/proyectos" || pathname.startsWith("/proyectos/")
+          }
+        >
           Proyectos
-        </span>
+        </Link>
+        {/* El Panel llega en un slice posterior del plan. */}
         <span className="sidebar-link" data-disabled="true">
           Panel
         </span>

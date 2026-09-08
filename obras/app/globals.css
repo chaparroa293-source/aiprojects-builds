@@ -256,3 +256,183 @@ table.directory tbody tr:hover {
   color: var(--text-muted);
   margin-bottom: 16px;
 }
+
+/* Projects / segments (Slice 2) -------------------------------- */
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-pill.is-active {
+  background: #e4f0e9;
+  color: var(--accent);
+}
+
+.status-pill.is-finished {
+  background: #ece9e2;
+  color: var(--text-muted);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.big-number {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 4px 0 12px;
+}
+
+.inline-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  max-width: 420px;
+}
+
+.revision-history {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.revision-history-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.revision-history ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.revision-history li {
+  margin-bottom: 4px;
+}
+
+/* Segment tree */
+.segment-tree {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.segment-tree .segment-tree {
+  margin: 0;
+  padding-left: 22px;
+  border-left: 1px solid var(--border);
+  margin-left: 8px;
+}
+
+.segment-node {
+  margin: 2px 0;
+}
+
+.segment-row {
+  padding: 4px 0;
+}
+
+.segment-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.segment-name {
+  font-weight: 600;
+}
+
+.segment-badge {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.segment-actions {
+  display: inline-flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.segment-sub {
+  margin: 6px 0 10px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 480px;
+}
+
+.row-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.row-form input[type="text"],
+.row-form select {
+  font: inherit;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.add-segment {
+  margin-top: 8px;
+}
+
+.danger-zone {
+  border-color: #e6cfce;
+}

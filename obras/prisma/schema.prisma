@@ -1,9 +1,13 @@
 // Obras — esquema Prisma
-// Slice 1: solo el directorio (Clientes / Proveedores / Personal).
-// Proyectos, Segmentos y Gastos llegan en slices posteriores.
+// Slice 1: directorio (Clientes / Proveedores / Personal).
+// Slice 2: Proyectos + árbol de Segmentos (sin dinero todavía).
+// Gastos, Pedidos, Notas y Adjuntos llegan en slices posteriores.
 //
 // Regla transversal: firm_id en TODAS las tablas desde el inicio
 // (una sola firma en v1, sin UI para cambiar de firma todavía).
+//
+// Montos en guaraníes: enteros, sin decimales. Se guardan como BigInt
+// y se exponen a la UI como number (rango seguro para montos de obra).
 
 generator client {
   provider = "prisma-client-js"
@@ -22,6 +26,8 @@ model Client {
   notes     String?
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
+
+  projects  Project[]
 
   @@index([firmId])
   @@map("clients")
@@ -51,4 +57,72 @@ model Employee {
 
   @@index([firmId])
   @@map("employees")
+}
+
+enum ProjectStatus {
+  ACTIVE
+  FINISHED
+}
+
+model Project {
+  id               String        @id @default(cuid())
+  firmId           String        @map("firm_id")
+  name             String
+  // Cliente opcional: se puede armar un proyecto antes de tener el
+  // cliente cargado en el directorio, o dejarlo sin asignar.
+  clientId         String?       @map("client_id")
+  // Precio total acordado, en guaraníes (entero). El valor vigente es
+  // siempre el último; el historial vive en PriceRevision.
+  agreedTotalPrice BigInt        @map("agreed_total_price")
+  // "Terminado" es un toggle manual, nunca calculado por gasto ni fecha.
+  status           ProjectStatus @default(ACTIVE)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  client         Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  segments       Segment[]
+  priceRevisions PriceRevision[]
+
+  @@index([firmId])
+  @@index([clientId])
+  @@map("projects")
+}
+
+model PriceRevision {
+  id        String   @id @default(cuid())
+  firmId    String   @map("firm_id")
+  projectId String   @map("project_id")
+  oldValue  BigInt   @map("old_value")
+  newValue  BigInt   @map("new_value")
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([firmId])
+  @@index([projectId])
+  @@map("price_revisions")
+}
+
+model Segment {
+  id        String   @id @default(cuid())
+  firmId    String   @map("firm_id")
+  projectId String   @map("project_id")
+  // Árbol recursivo de profundidad arbitraria. null = segmento raíz.
+  parentId  String?  @map("parent_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // Restrict: no se puede borrar un segmento que todavía tiene hijos
+  // (regla de bloqueo de la spec, decisión #2). La app además valida
+  // esto antes para dar un mensaje claro en español.
+  parent   Segment?  @relation("SegmentTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children Segment[] @relation("SegmentTree")
+
+  @@index([firmId])
+  @@index([projectId])
+  @@index([parentId])
+  @@map("segments")
 }
