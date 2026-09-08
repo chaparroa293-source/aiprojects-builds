@@ -13,4 +13,6 @@ Planned product areas:
 - Directory
 - Capture
 
-These are product areas only. None is implemented in this repository.
+Implemented now: Clients and client-owned Sessions. Sessions are available only in Client Detail; no global Sessions page exists.
+
+Scheduling, Payments, Follow-ups, History, Reporting, Practice Analytics, Directory, and Capture remain product areas only. Appointment is explicitly deferred.

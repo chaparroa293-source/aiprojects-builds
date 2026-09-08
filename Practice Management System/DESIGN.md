@@ -42,7 +42,7 @@ The tutor predecessor application is the visual reference implementation: a dark
 
 ### Product context and register
 
-- **Audience and primary job:** Paraguayan independent service professionals creating and retrieving client details quickly.
+- **Audience and primary job:** Paraguayan independent service professionals recording and retrieving client/session details quickly.
 - **Target market and locale:** Paraguay; Spanish (`es-PY`). All owned UI copy is Spanish. Future currency uses PYG (`₲ 150.000`).
 - **Register:** Product. Familiar form and directory behavior take priority over decoration.
 - **Memorable signature:** The predecessor's dark-green application spine beside a warm, ledger-like client workspace.
@@ -59,7 +59,7 @@ The tutor predecessor application is the visual reference implementation: a dark
 
 ## Layout
 
-The shell uses a persistent sidebar on desktop and a compact navigation strip on narrow screens. Every active page follows eyebrow → serif title → short explanation → primary action → operational surface. The Clients surface adds controls, a readable table, and a detail/form panel; it becomes sequential on narrow screens.
+The shell uses a persistent sidebar on desktop and a compact navigation strip on narrow screens. Every active page follows eyebrow → serif title → short explanation → primary action → operational surface. The Clients surface adds controls, a readable table, and a detail/form panel; Client Detail uses restrained Datos/Sesiones tabs and becomes sequential on narrow screens.
 
 ## Elevation & Depth
 
@@ -71,7 +71,7 @@ Fields and buttons use `sm`; the directory container uses `lg`. Status chips are
 
 ## Components
 
-Buttons have native semantics, visible focus, stable busy dimensions, and primary/secondary hierarchy. Search has an owned clear action. Inputs use associated labels and inline Spanish errors. The native state/select controls are intentional: platform-owned popups are acceptable for these small option sets. Textareas do not resize. Saved and failure messages use stable inline live regions. Demo data is visibly labeled and never presented as persisted information.
+Buttons have native semantics, visible focus, stable busy dimensions, and primary/secondary hierarchy. Search has an owned clear action. Inputs use associated labels and inline Spanish errors. The native date, time, and state/select controls are intentional: platform-owned popups are acceptable for these small option sets. Textareas do not resize. Saved and failure messages use stable inline live regions. Demo data is visibly labeled and never presented as persisted information.
 
 ## Do's and Don'ts
 

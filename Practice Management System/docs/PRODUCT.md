@@ -13,8 +13,8 @@ Practice Management System is a reusable practice-management system for independ
 
 ## Current implementation
 
-Slice 1 implements the Client Directory: a professional can create, persist, list, view, edit, and reload a minimal client record.
+Slice 1 implements the Client Directory. Slice 2 adds Session history within a client's detail: a professional can record, persist, view, edit, and reload a session without leaving that client context. A session records what happened, when, and its status; it contains no payment truth.
 
 ## Not yet implemented
 
-Scheduling, sessions, payments, follow-ups, reporting, authentication, deployment, and AI/natural-language capture are not implemented.
+Scheduling (including an Appointment object), payments, follow-ups, reporting, authentication, deployment, and AI/natural-language capture are not implemented.

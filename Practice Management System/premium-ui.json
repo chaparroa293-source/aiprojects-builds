@@ -5,6 +5,7 @@
   "canonicalMap": "UX-CONTRACT.md",
   "referenceImplementation": "Tutor predecessor visual grammar: persistent dark-green sidebar, warm workspace, serif page titles, operational tables and restrained controls.",
   "ownership": {
-    "Select/Listbox": "native"
+    "Select/Listbox": "native",
+    "Date": "native"
   }
 }

@@ -30,3 +30,9 @@
 
 - Removed the single fake persistence-verification client after confirming create, read, edit, reload, filter, and sort behavior; the directory returned to its empty state.
 - Client Directory remains development-only: browser access is limited to `SELECT`, `INSERT`, and `UPDATE`; authentication, ownership, RLS, and production hardening are deferred.
+
+## 2026-09-08 — Slice 2: Session history
+
+- Applied the scoped `practice_management.sessions` migration with a direct `client_id` foreign key, status constraint, optional duration, client-history index, and the existing scoped `updated_at` behavior.
+- Exposed only `sessions` in the existing `practice_management` Data API namespace and granted the development browser role only `SELECT`, `INSERT`, and `UPDATE`.
+- Verified fake client/session create, empty history, no-duration entry, all allowed states, direct database read, edit, and reload persistence. Scoped fake records were removed after verification.
