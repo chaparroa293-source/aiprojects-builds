@@ -52,7 +52,6 @@ export default async function DirectoryDetailPage({
         <div>
           <h1 className="page-title">{record.name}</h1>
           <p className="muted subline">
-            {record.phone ?? "Sin teléfono"} ·{" "}
             {record.activeProjectCount} proyecto
             {record.activeProjectCount === 1 ? "" : "s"} activo
             {record.activeProjectCount === 1 ? "" : "s"}
@@ -84,6 +83,24 @@ export default async function DirectoryDetailPage({
           />
         </div>
       </div>
+
+      <section className="panel">
+        <div className="panel-head">
+          <h2 className="panel-title">Datos</h2>
+        </div>
+        <dl className="data-list">
+          <div>
+            <dt>Teléfono</dt>
+            <dd className={record.phone ? "" : "muted"}>
+              {record.phone ?? "—"}
+            </dd>
+          </div>
+          <div>
+            <dt>RUC</dt>
+            <dd className={record.ruc ? "" : "muted"}>{record.ruc ?? "—"}</dd>
+          </div>
+        </dl>
+      </section>
 
       {record.notes ? (
         <section className="panel">

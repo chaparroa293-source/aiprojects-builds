@@ -54,6 +54,15 @@ export function DirectoryQuickForm({
         />
       </div>
       <div className="field">
+        <label htmlFor="dir-ruc">RUC</label>
+        <input
+          id="dir-ruc"
+          name="ruc"
+          type="text"
+          defaultValue={record?.ruc ?? ""}
+        />
+      </div>
+      <div className="field">
         <label htmlFor="dir-notes">Notas</label>
         <textarea
           id="dir-notes"

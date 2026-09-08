@@ -21,6 +21,8 @@ export type DirectoryRecord = {
   id: string;
   name: string;
   phone: string | null;
+  /** RUC — identificador tributario paraguayo. Opcional, sin unicidad. */
+  ruc: string | null;
   notes: string | null;
   activeProjectCount: number;
   /** Nombres de los proyectos vinculados (todos, no sólo activos),
@@ -185,6 +187,7 @@ export async function listRecords(kind: DirectoryKind): Promise<DirectoryRecord[
       id: r.id,
       name: r.name,
       phone: r.phone,
+      ruc: r.ruc,
       notes: r.notes,
       activeProjectCount: counts.get(r.id) ?? 0,
       linkedProjects: projects,
@@ -208,6 +211,7 @@ export async function getRecord(
     id: r.id,
     name: r.name,
     phone: r.phone,
+    ruc: r.ruc,
     notes: r.notes,
     activeProjectCount: counts.get(r.id) ?? 0,
     linkedProjects: (linked.get(r.id) ?? []).sort((a, b) =>
@@ -375,12 +379,21 @@ export async function getDirectoryDetail(
 }
 
 type ParsedForm =
-  | { ok: true; data: { name: string; phone: string | null; notes: string | null } }
+  | {
+      ok: true;
+      data: {
+        name: string;
+        phone: string | null;
+        ruc: string | null;
+        notes: string | null;
+      };
+    }
   | { ok: false; error: string };
 
 function parseForm(formData: FormData): ParsedForm {
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
+  const ruc = String(formData.get("ruc") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
 
   if (!name) return { ok: false, error: "El nombre es obligatorio." };
@@ -390,6 +403,7 @@ function parseForm(formData: FormData): ParsedForm {
     data: {
       name,
       phone: phone || null,
+      ruc: ruc || null,
       notes: notes || null,
     },
   };

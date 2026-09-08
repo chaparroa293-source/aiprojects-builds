@@ -335,6 +335,29 @@ a:hover {
   margin: 0;
   white-space: pre-wrap;
 }
+
+.data-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, max-content));
+  gap: 10px 32px;
+}
+.data-list > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.data-list dt {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.data-list dd {
+  margin: 0;
+  font-weight: 600;
+}
 .empty-state {
   padding: 34px 14px;
   text-align: center;

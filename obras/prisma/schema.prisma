@@ -24,6 +24,8 @@ model Client {
   firmId    String    @map("firm_id")
   name      String
   phone     String?
+  // RUC: identificador tributario paraguayo. Opcional, sin unicidad.
+  ruc       String?
   notes     String?
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -39,6 +41,8 @@ model Supplier {
   firmId    String    @map("firm_id")
   name      String
   phone     String?
+  // RUC: identificador tributario paraguayo. Opcional, sin unicidad.
+  ruc       String?
   notes     String?
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -55,6 +59,8 @@ model Employee {
   firmId    String    @map("firm_id")
   name      String
   phone     String?
+  // RUC: identificador tributario paraguayo. Opcional, sin unicidad.
+  ruc       String?
   notes     String?
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
