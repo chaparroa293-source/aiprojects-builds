@@ -12,20 +12,59 @@ export type SegmentNode = {
   name: string;
   childCount: number;
   expenseCount: number;
+  /** Gasto cargado directamente en este segmento. */
+  ownSpend: number;
+  /** ownSpend + el de todos sus descendientes (rollup del árbol). */
+  totalSpend: number;
 };
 
+/**
+ * Lectura únicamente: arma el árbol con el gasto acumulado por nodo.
+ * La agregación real por proyecto/segmento (overview, delta) es del
+ * Slice 4; acá solo se lee para mostrar el número inline en el árbol.
+ */
 export async function listSegments(projectId: string): Promise<SegmentNode[]> {
-  const rows = await prisma.segment.findMany({
-    where: { firmId: FIRM_ID, projectId },
-    orderBy: { name: "asc" },
-    include: { _count: { select: { children: true, expenses: true } } },
-  });
+  const [rows, sums] = await Promise.all([
+    prisma.segment.findMany({
+      where: { firmId: FIRM_ID, projectId },
+      orderBy: { name: "asc" },
+      include: { _count: { select: { children: true, expenses: true } } },
+    }),
+    prisma.expense.groupBy({
+      by: ["segmentId"],
+      where: { firmId: FIRM_ID, projectId },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const own = new Map<string, number>();
+  for (const s of sums) own.set(s.segmentId, Number(s._sum.amount ?? 0n));
+
+  // Rollup: sumar cada nodo hacia todos sus ancestros.
+  const parentOf = new Map<string, string | null>();
+  for (const r of rows) parentOf.set(r.id, r.parentId);
+
+  const total = new Map<string, number>();
+  for (const r of rows) total.set(r.id, own.get(r.id) ?? 0);
+  for (const r of rows) {
+    const amount = own.get(r.id) ?? 0;
+    if (amount === 0) continue;
+    let parent = parentOf.get(r.id) ?? null;
+    let guard = 0;
+    while (parent && guard++ < 100) {
+      total.set(parent, (total.get(parent) ?? 0) + amount);
+      parent = parentOf.get(parent) ?? null;
+    }
+  }
+
   return rows.map((s) => ({
     id: s.id,
     parentId: s.parentId,
     name: s.name,
     childCount: s._count.children,
     expenseCount: s._count.expenses,
+    ownSpend: own.get(s.id) ?? 0,
+    totalSpend: total.get(s.id) ?? 0,
   }));
 }
 

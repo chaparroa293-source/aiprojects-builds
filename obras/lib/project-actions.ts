@@ -190,7 +190,8 @@ export async function updateProjectDetails(
 
   revalidatePath("/proyectos");
   revalidatePath(`/proyectos/${id}`);
-  redirect(`/proyectos/${id}`);
+  // Sin redirect: la edición ocurre en un popup sobre la misma página.
+  return { error: null };
 }
 
 export async function reviseProjectPrice(

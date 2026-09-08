@@ -1,8 +1,15 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import type { QuickAddData, QuickAddProject } from "@/lib/expense-actions";
-import { createExpense } from "@/lib/expense-actions";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import {
+  createExpense,
+  getQuickAddData,
+  type QuickAddData,
+  type QuickAddProject,
+} from "@/lib/expense-actions";
+import { formatGsSymbol } from "@/lib/money";
+import { Popup } from "./Popup";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -19,161 +26,193 @@ function defaultSegmentFor(project: QuickAddProject | null): string {
   return project.segments[0]?.id ?? "";
 }
 
-// El quick-add global vive en el shell; puede remontarse al revalidar.
-// Guardamos la última selección en sessionStorage para no perderla
-// entre cargas rápidas sucesivas.
 const STORE_KEY = "obras.quickadd.selection";
 
-function readStoredSelection(): { projectId: string; segmentId: string } | null {
+function readStored(): { projectId: string; segmentId: string } | null {
   try {
     const raw = sessionStorage.getItem(STORE_KEY);
-    return raw ? (JSON.parse(raw) as { projectId: string; segmentId: string }) : null;
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-function writeStoredSelection(projectId: string, segmentId: string) {
+function writeStored(projectId: string, segmentId: string) {
   try {
     sessionStorage.setItem(STORE_KEY, JSON.stringify({ projectId, segmentId }));
   } catch {
-    /* almacenamiento no disponible: no pasa nada */
+    /* ignorar */
   }
 }
 
+type LoggedEntry = {
+  key: number;
+  amount: number;
+  projectName: string;
+  segmentLabel: string;
+  supplierName: string | null;
+};
+
+/**
+ * Captura rápida de gastos: el flujo más usado de la app.
+ *
+ * El popup MANTIENE sus datos en estado local (los pide con
+ * getQuickAddData al abrirse) en vez de recibirlos del shell. Eso es
+ * lo que arregla la regresión del Slice 3: revalidar el shell ya no
+ * puede desincronizar los selects, así que el popup puede quedarse
+ * abierto después de guardar y encadenar varias cargas seguidas.
+ */
 export function QuickAddExpense({
-  data,
   lockedProjectId,
   triggerLabel = "+ Gasto rápido",
   triggerClassName = "btn btn-primary quick-add-trigger",
 }: {
-  data: QuickAddData;
   lockedProjectId?: string;
   triggerLabel?: string;
   triggerClassName?: string;
 }) {
-  const findProject = (id: string) =>
-    data.projects.find((p) => p.id === id) ?? null;
-
-  // Selección inicial segura para SSR (sin tocar sessionStorage):
-  // proyecto bloqueado > único proyecto existente > vacío.
-  const ssrProjectId =
-    lockedProjectId ??
-    (data.projects.length === 1 ? data.projects[0].id : "");
-
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [projectId, setProjectId] = useState(ssrProjectId);
-  const [segmentId, setSegmentId] = useState(() =>
-    defaultSegmentFor(findProject(ssrProjectId)),
-  );
+  const [data, setData] = useState<QuickAddData | null>(null);
+  const [loading, startLoading] = useTransition();
 
-  // Al montar en el cliente, restaurar la última selección guardada
-  // (solo para el quick-add global, no cuando el proyecto está fijo).
-  useEffect(() => {
-    if (lockedProjectId) return;
-    const stored = readStoredSelection();
-    if (!stored) return;
-    const proj = data.projects.find((p) => p.id === stored.projectId);
-    if (!proj) return;
-    const seg = proj.segments.some((s) => s.id === stored.segmentId)
-      ? stored.segmentId
-      : defaultSegmentFor(proj);
-    // Sincronización única desde sessionStorage al montar.
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setProjectId(stored.projectId);
-    setSegmentId(seg);
-    /* eslint-enable react-hooks/set-state-in-effect */
-    // Solo al montar.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [projectId, setProjectId] = useState(lockedProjectId ?? "");
+  const [segmentId, setSegmentId] = useState("");
   const [supplierMode, setSupplierMode] = useState("");
-  const [amount, setAmount] = useState("");
   const [newSupplierName, setNewSupplierName] = useState("");
+  const [amount, setAmount] = useState("");
   const [spentAt, setSpentAt] = useState(todayISO());
   const [description, setDescription] = useState("");
+  const [logged, setLogged] = useState<LoggedEntry[]>([]);
 
   const [state, formAction, pending] = useActionState(createExpense, {
     error: null as string | null,
   });
 
-  // Tras un guardado exitoso: guardar la selección, limpiar campos y
-  // cerrar el panel. (Patrón "comparar con el render anterior", sin
-  // useEffect.) Reabrir es un clic y sessionStorage repone proyecto+segmento.
+  const currentProject =
+    data?.projects.find((p) => p.id === projectId) ?? null;
+
+  function applyDefaults(d: QuickAddData) {
+    const stored = lockedProjectId ? null : readStored();
+    let pid = lockedProjectId ?? "";
+    if (!pid && stored && d.projects.some((p) => p.id === stored.projectId)) {
+      pid = stored.projectId;
+    }
+    if (!pid && d.projects.length === 1) pid = d.projects[0].id;
+
+    const proj = d.projects.find((p) => p.id === pid) ?? null;
+    let sid = defaultSegmentFor(proj);
+    if (
+      stored &&
+      stored.projectId === pid &&
+      proj?.segments.some((s) => s.id === stored.segmentId)
+    ) {
+      sid = stored.segmentId;
+    }
+    setProjectId(pid);
+    setSegmentId(sid);
+  }
+
+  function openPopup() {
+    setOpen(true);
+    setLogged([]);
+    startLoading(async () => {
+      const d = await getQuickAddData();
+      setData(d);
+      applyDefaults(d);
+    });
+  }
+
+  function closePopup() {
+    setOpen(false);
+    // Recién ahora refrescamos la página de atrás, para que revalidar
+    // nunca toque el popup mientras está abierto.
+    if (logged.length > 0) router.refresh();
+  }
+
+  // Tras un guardado exitoso: sumar a la lista de la sesión, limpiar
+  // monto/nota/proveedor y dejar el formulario listo para el próximo.
   const [lastSavedAt, setLastSavedAt] = useState<number | undefined>(undefined);
-  const [justSavedAt, setJustSavedAt] = useState<number | undefined>(undefined);
   if (state.savedAt && state.savedAt !== lastSavedAt) {
     setLastSavedAt(state.savedAt);
-    setJustSavedAt(state.savedAt);
+    const parsed = Number(amount.replace(/[.\s₲]/g, "")) || 0;
+    const segLabel =
+      currentProject?.segments.find((s) => s.id === segmentId)?.label ?? "";
+    const supplierName =
+      supplierMode === "__new__"
+        ? newSupplierName || null
+        : data?.suppliers.find((s) => s.id === supplierMode)?.name ?? null;
+    setLogged((prev) => [
+      {
+        key: state.savedAt as number,
+        amount: parsed,
+        projectName: currentProject?.name ?? "",
+        segmentLabel: segLabel,
+        supplierName,
+      },
+      ...prev,
+    ]);
     setAmount("");
     setDescription("");
     setNewSupplierName("");
     setSupplierMode("");
-    if (!lockedProjectId) writeStoredSelection(projectId, segmentId);
-    setOpen(false);
+    if (!lockedProjectId) writeStored(projectId, segmentId);
   }
 
-  const currentProject = findProject(projectId);
+  // Refrescar el catálogo (proveedor creado al vuelo, último segmento
+  // usado) sin tocar la selección actual.
+  useEffect(() => {
+    if (!state.savedAt || !open) return;
+    let cancelled = false;
+    getQuickAddData().then((d) => {
+      if (!cancelled) setData(d);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.savedAt, open]);
 
   function onProjectChange(id: string) {
-    const seg = defaultSegmentFor(findProject(id));
+    const proj = data?.projects.find((p) => p.id === id) ?? null;
+    const seg = defaultSegmentFor(proj);
     setProjectId(id);
     setSegmentId(seg);
-    if (!lockedProjectId) writeStoredSelection(id, seg);
+    if (!lockedProjectId) writeStored(id, seg);
   }
 
   function onSegmentChange(id: string) {
     setSegmentId(id);
-    if (!lockedProjectId) writeStoredSelection(projectId, id);
+    if (!lockedProjectId) writeStored(projectId, id);
   }
 
-  function openModal() {
-    setJustSavedAt(undefined);
-    setOpen(true);
-  }
-
-  function close() {
-    setOpen(false);
-  }
+  const totalLogged = logged.reduce((acc, l) => acc + l.amount, 0);
 
   return (
     <>
-      <button type="button" className={triggerClassName} onClick={openModal}>
+      <button type="button" className={triggerClassName} onClick={openPopup}>
         {triggerLabel}
       </button>
-      {justSavedAt ? (
-        <span className="quick-add-saved" role="status">
-          ✓ Gasto registrado
-        </span>
-      ) : null}
 
       {open ? (
-        <div className="modal-overlay" onClick={close}>
-          <div
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Registrar gasto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-head">
-              <h2 className="panel-title">Registrar gasto</h2>
-              <button type="button" className="link-btn" onClick={close}>
-                Cerrar
-              </button>
-            </div>
-
-            {data.projects.length === 0 ? (
-              <p className="muted">
-                No hay proyectos activos. Creá un proyecto y al menos un
-                segmento antes de registrar gastos.
-              </p>
-            ) : (
-              <form action={formAction} className="modal-form">
-                {/* Un <select disabled> no se envía en el formulario:
-                    el proyecto (bloqueado o no) viaja siempre acá. */}
+        <Popup
+          title="Registrar gasto"
+          subtitle="Proyecto → segmento → monto. El resto es opcional."
+          onClose={closePopup}
+          width={460}
+        >
+          {loading && !data ? (
+            <p className="muted">Cargando…</p>
+          ) : data && data.projects.length === 0 ? (
+            <p className="muted">
+              No hay proyectos activos. Creá un proyecto y al menos un segmento
+              antes de registrar gastos.
+            </p>
+          ) : data ? (
+            <>
+              <form action={formAction} className="popup-form">
+                {/* Un <select disabled> no se envía: el proyecto viaja acá. */}
                 <input type="hidden" name="projectId" value={projectId} />
 
-                {/* Orden pensado para captura rápida: proyecto → segmento → monto */}
                 <div className="field">
                   <label htmlFor="qa-project">Proyecto *</label>
                   <select
@@ -199,7 +238,6 @@ export function QuickAddExpense({
                     name="segmentId"
                     value={segmentId}
                     onChange={(e) => onSegmentChange(e.target.value)}
-                    required
                     disabled={!currentProject}
                   >
                     <option value="">
@@ -214,7 +252,7 @@ export function QuickAddExpense({
                     ))}
                   </select>
                   {currentProject && currentProject.segments.length === 0 ? (
-                    <span className="muted" style={{ fontSize: 12 }}>
+                    <span className="hint">
                       Agregá un segmento en la página del proyecto primero.
                     </span>
                   ) : null}
@@ -229,13 +267,12 @@ export function QuickAddExpense({
                     inputMode="numeric"
                     placeholder="150.000"
                     autoFocus
-                    required
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                   />
                 </div>
 
-                <details className="modal-more">
+                <details className="popup-more">
                   <summary>Datos opcionales</summary>
 
                   <div className="field">
@@ -297,13 +334,8 @@ export function QuickAddExpense({
                 {state.error ? (
                   <p className="form-error">{state.error}</p>
                 ) : null}
-                {state.savedAt ? (
-                  <p className="form-ok">
-                    Gasto registrado. Podés cargar otro.
-                  </p>
-                ) : null}
 
-                <div className="form-actions">
+                <div className="popup-actions">
                   <button
                     type="submit"
                     className="btn btn-primary"
@@ -311,14 +343,37 @@ export function QuickAddExpense({
                   >
                     {pending ? "Guardando…" : "Registrar gasto"}
                   </button>
-                  <button type="button" className="btn" onClick={close}>
+                  <button type="button" className="btn" onClick={closePopup}>
                     Listo
                   </button>
                 </div>
               </form>
-            )}
-          </div>
-        </div>
+
+              {logged.length > 0 ? (
+                <div className="session-log">
+                  <div className="session-log-head">
+                    ✓ {logged.length} gasto{logged.length === 1 ? "" : "s"}{" "}
+                    registrado{logged.length === 1 ? "" : "s"} ·{" "}
+                    {formatGsSymbol(totalLogged)}
+                  </div>
+                  <ul>
+                    {logged.map((l) => (
+                      <li key={l.key}>
+                        <span className="session-log-amount">
+                          {formatGsSymbol(l.amount)}
+                        </span>{" "}
+                        <span className="muted">
+                          {l.projectName} · {l.segmentLabel}
+                          {l.supplierName ? ` · ${l.supplierName}` : ""}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </>
+          ) : null}
+        </Popup>
       ) : null}
     </>
   );

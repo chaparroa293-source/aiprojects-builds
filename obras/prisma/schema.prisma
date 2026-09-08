@@ -44,6 +44,7 @@ model Supplier {
   updatedAt DateTime  @updatedAt @map("updated_at")
 
   expenses  Expense[]
+  projects  ProjectSupplier[]
 
   @@index([firmId])
   @@map("suppliers")
@@ -57,6 +58,8 @@ model Employee {
   notes     String?
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
+
+  projects  ProjectEmployee[]
 
   @@index([firmId])
   @@map("employees")
@@ -90,10 +93,50 @@ model Project {
   segments       Segment[]
   priceRevisions PriceRevision[]
   expenses       Expense[]
+  suppliers      ProjectSupplier[]
+  employees      ProjectEmployee[]
 
   @@index([firmId])
   @@index([clientId])
   @@map("projects")
+}
+
+// Directorio compartido <-> proyectos (spec, sección 1): proveedores y
+// personal son firm-wide y se vinculan a cualquier cantidad de obras.
+// Cascade a propósito: el vínculo no es historial financiero. Borrar un
+// proveedor del directorio quita el vínculo pero NUNCA borra sus gastos
+// (Expense.supplierId es SetNull).
+
+model ProjectSupplier {
+  id         String   @id @default(cuid())
+  firmId     String   @map("firm_id")
+  projectId  String   @map("project_id")
+  supplierId String   @map("supplier_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, supplierId])
+  @@index([firmId])
+  @@index([supplierId])
+  @@map("project_suppliers")
+}
+
+model ProjectEmployee {
+  id         String   @id @default(cuid())
+  firmId     String   @map("firm_id")
+  projectId  String   @map("project_id")
+  employeeId String   @map("employee_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, employeeId])
+  @@index([firmId])
+  @@index([employeeId])
+  @@map("project_employees")
 }
 
 model PriceRevision {

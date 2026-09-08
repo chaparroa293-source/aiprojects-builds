@@ -5,9 +5,9 @@ import {
   DIRECTORY_KINDS,
   isDirectoryKind,
 } from "@/lib/directory-config";
-import { listRecords } from "@/lib/directory-actions";
+import { createRecord, listRecords } from "@/lib/directory-actions";
+import { DirectoryFormPopup } from "@/app/_components/DirectoryFormPopup";
 
-// Datos en vivo desde Postgres — no prerenderizar.
 export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
@@ -29,33 +29,36 @@ export default async function DirectoryListPage({
     <>
       <div className="page-header">
         <h1 className="page-title">{meta.listTitle}</h1>
-        <Link href={`/${kind}/nuevo`} className="btn btn-primary">
-          + {meta.addLabel}
-        </Link>
+        <DirectoryFormPopup
+          action={createRecord.bind(null, kind)}
+          title={meta.addLabel}
+          submitLabel="Crear"
+          triggerLabel={`+ ${meta.addLabel}`}
+        />
       </div>
 
       {records.length === 0 ? (
-        <div className="card">
+        <div className="panel">
           <p className="empty-state">{meta.emptyText}</p>
         </div>
       ) : (
-        <div className="card">
-          <table className="directory">
+        <div className="panel panel-flush">
+          <table className="grid">
             <thead>
               <tr>
                 <th>Nombre</th>
                 <th>Teléfono</th>
-                <th>Proyectos activos</th>
+                <th className="num">Proyectos activos</th>
               </tr>
             </thead>
             <tbody>
               {records.map((r) => (
                 <tr key={r.id}>
-                  <td className="row-name">
+                  <td className="strong">
                     <Link href={`/${kind}/${r.id}`}>{r.name}</Link>
                   </td>
                   <td className={r.phone ? "" : "muted"}>{r.phone ?? "—"}</td>
-                  <td className="muted">{r.activeProjectCount}</td>
+                  <td className="num muted">{r.activeProjectCount}</td>
                 </tr>
               ))}
             </tbody>

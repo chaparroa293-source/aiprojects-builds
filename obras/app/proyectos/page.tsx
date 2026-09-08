@@ -1,6 +1,12 @@
 import Link from "next/link";
-import { countArchivedProjects, listProjects } from "@/lib/project-actions";
+import {
+  countArchivedProjects,
+  createProject,
+  listClientOptions,
+  listProjects,
+} from "@/lib/project-actions";
 import { formatGsSymbol } from "@/lib/money";
+import { ProjectFormPopup } from "@/app/_components/ProjectFormPopup";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +17,10 @@ export default async function ProjectsListPage({
 }) {
   const { archivados } = await searchParams;
   const showArchived = archivados === "1";
-  const [projects, archivedCount] = await Promise.all([
+  const [projects, archivedCount, clients] = await Promise.all([
     listProjects({ archived: showArchived }),
     countArchivedProjects(),
+    listClientOptions(),
   ]);
 
   return (
@@ -27,14 +34,17 @@ export default async function ProjectsListPage({
             ← Volver a activos
           </Link>
         ) : (
-          <Link href="/proyectos/nuevo" className="btn btn-primary">
-            + Nuevo proyecto
-          </Link>
+          <ProjectFormPopup
+            action={createProject}
+            clients={clients}
+            mode="create"
+            triggerLabel="+ Nuevo proyecto"
+          />
         )}
       </div>
 
       {projects.length === 0 ? (
-        <div className="card">
+        <div className="panel">
           <p className="empty-state">
             {showArchived
               ? "No hay proyectos archivados."
@@ -42,22 +52,22 @@ export default async function ProjectsListPage({
           </p>
         </div>
       ) : (
-        <div className="card">
-          <table className="directory">
+        <div className="panel panel-flush">
+          <table className="grid">
             <thead>
               <tr>
                 <th>Nombre</th>
                 <th>Cliente</th>
                 <th>Estado</th>
-                <th>Precio acordado</th>
-                <th>Segmentos</th>
-                <th>Gastos</th>
+                <th className="num">Precio acordado</th>
+                <th className="num">Segmentos</th>
+                <th className="num">Gastos</th>
               </tr>
             </thead>
             <tbody>
               {projects.map((p) => (
                 <tr key={p.id}>
-                  <td className="row-name">
+                  <td className="strong">
                     <Link href={`/proyectos/${p.id}`}>{p.name}</Link>
                   </td>
                   <td className={p.clientName ? "" : "muted"}>
@@ -65,16 +75,16 @@ export default async function ProjectsListPage({
                   </td>
                   <td>
                     <span
-                      className={`status-pill ${
+                      className={`pill ${
                         p.status === "FINISHED" ? "is-finished" : "is-active"
                       }`}
                     >
                       {p.status === "FINISHED" ? "Terminado" : "Activo"}
                     </span>
                   </td>
-                  <td>{formatGsSymbol(p.agreedTotalPrice)}</td>
-                  <td className="muted">{p.segmentCount}</td>
-                  <td className="muted">{p.expenseCount}</td>
+                  <td className="num">{formatGsSymbol(p.agreedTotalPrice)}</td>
+                  <td className="num muted">{p.segmentCount}</td>
+                  <td className="num muted">{p.expenseCount}</td>
                 </tr>
               ))}
             </tbody>
@@ -83,7 +93,7 @@ export default async function ProjectsListPage({
       )}
 
       {!showArchived && archivedCount > 0 ? (
-        <p style={{ marginTop: 16 }}>
+        <p style={{ marginTop: 14 }}>
           <Link href="/proyectos?archivados=1" className="link-btn">
             Ver {archivedCount} proyecto{archivedCount === 1 ? "" : "s"}{" "}
             archivado{archivedCount === 1 ? "" : "s"}

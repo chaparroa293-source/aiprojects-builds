@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import type { ProjectStatus } from "@prisma/client";
 
 export function StatusToggle({
@@ -9,12 +10,19 @@ export function StatusToggle({
   status: ProjectStatus;
   onToggle: () => Promise<void>;
 }) {
+  const router = useRouter();
   const finished = status === "FINISHED";
+
   return (
-    <form action={onToggle}>
-      <button type="submit" className="btn">
-        {finished ? "Reabrir proyecto (marcar activo)" : "Marcar como terminado"}
-      </button>
-    </form>
+    <button
+      type="button"
+      className="btn"
+      onClick={async () => {
+        await onToggle();
+        router.refresh();
+      }}
+    >
+      {finished ? "Reabrir" : "Marcar terminado"}
+    </button>
   );
 }

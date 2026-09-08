@@ -8,6 +8,8 @@ import {
   reparentSegment,
   deleteSegment,
 } from "@/lib/segment-actions";
+import { formatGsSymbol } from "@/lib/money";
+import { Popup, PopupActions } from "./Popup";
 
 type TreeNode = SegmentNode & { children: TreeNode[] };
 
@@ -25,7 +27,6 @@ function buildTree(flat: SegmentNode[]): TreeNode[] {
   return roots;
 }
 
-/** id -> set of all descendant ids (for reparent options in the UI). */
 function descendantMap(flat: SegmentNode[]): Map<string, Set<string>> {
   const childrenOf = new Map<string, string[]>();
   flat.forEach((s) => {
@@ -61,70 +62,159 @@ export function SegmentManager({
   const tree = useMemo(() => buildTree(segments), [segments]);
   const descendants = useMemo(() => descendantMap(segments), [segments]);
 
+  // Árbol entero expandido por defecto: sólo guardamos los colapsados.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [addParent, setAddParent] = useState<{ id: string | null; name: string } | null>(
+    null,
+  );
+  const [editing, setEditing] = useState<TreeNode | null>(null);
+
+  function toggle(id: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
     <section className="panel">
       <div className="panel-head">
         <h2 className="panel-title">Segmentos</h2>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Árbol de categorías de costo. Sin límite de profundidad.
-        </span>
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={() => setAddParent({ id: null, name: "" })}
+        >
+          + Segmento raíz
+        </button>
       </div>
 
       {tree.length === 0 ? (
-        <p className="muted" style={{ fontSize: 13 }}>
-          Todavía no hay segmentos. Agregá el primero abajo.
+        <p className="muted">
+          Todavía no hay segmentos. Agregá el primero con “+ Segmento raíz”.
         </p>
       ) : (
-        <ul className="segment-tree">
+        <ul className="tree">
           {tree.map((node) => (
-            <SegmentBranch
+            <TreeBranch
               key={node.id}
               node={node}
-              projectId={projectId}
-              allSegments={segments}
-              descendants={descendants}
+              collapsed={collapsed}
+              onToggle={toggle}
+              onAdd={(n) => setAddParent({ id: n.id, name: n.name })}
+              onEdit={setEditing}
             />
           ))}
         </ul>
       )}
 
-      <AddSegmentForm
-        projectId={projectId}
-        parentId={null}
-        label="Agregar segmento raíz"
-      />
+      {addParent ? (
+        <AddSegmentPopup
+          projectId={projectId}
+          parentId={addParent.id}
+          parentName={addParent.name}
+          onClose={() => setAddParent(null)}
+        />
+      ) : null}
+
+      {editing ? (
+        <EditSegmentPopup
+          node={editing}
+          allSegments={segments}
+          forbidden={descendants.get(editing.id) ?? new Set()}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
     </section>
   );
 }
 
-function SegmentBranch({
+function TreeBranch({
   node,
-  projectId,
-  allSegments,
-  descendants,
+  collapsed,
+  onToggle,
+  onAdd,
+  onEdit,
 }: {
   node: TreeNode;
-  projectId: string;
-  allSegments: SegmentNode[];
-  descendants: Map<string, Set<string>>;
+  collapsed: Set<string>;
+  onToggle: (id: string) => void;
+  onAdd: (n: TreeNode) => void;
+  onEdit: (n: TreeNode) => void;
 }) {
+  const hasChildren = node.children.length > 0;
+  const isCollapsed = collapsed.has(node.id);
+
   return (
-    <li className="segment-node">
-      <SegmentRow
-        node={node}
-        projectId={projectId}
-        allSegments={allSegments}
-        descendants={descendants}
-      />
-      {node.children.length > 0 ? (
-        <ul className="segment-tree">
+    <li className="tree-node">
+      <div className="tree-row">
+        {hasChildren ? (
+          <button
+            type="button"
+            className="tree-caret"
+            onClick={() => onToggle(node.id)}
+            aria-expanded={!isCollapsed}
+            aria-label={isCollapsed ? "Expandir" : "Contraer"}
+          >
+            {isCollapsed ? "▸" : "▾"}
+          </button>
+        ) : (
+          <span className="tree-caret tree-caret-empty" aria-hidden="true" />
+        )}
+
+        <span className="tree-name">{node.name}</span>
+
+        {/* El número siempre visible: es una app de plata. */}
+        <span
+          className={`tree-spend ${node.totalSpend === 0 ? "is-zero" : ""}`}
+          title={
+            hasChildren
+              ? `Propio: ${formatGsSymbol(node.ownSpend)} · Con subsegmentos: ${formatGsSymbol(node.totalSpend)}`
+              : undefined
+          }
+        >
+          {formatGsSymbol(node.totalSpend)}
+          {hasChildren && node.ownSpend !== node.totalSpend ? (
+            <span className="tree-spend-own">
+              propio {formatGsSymbol(node.ownSpend)}
+            </span>
+          ) : null}
+        </span>
+
+        <span className="tree-actions">
+          <button
+            type="button"
+            className="icon-btn"
+            title="Agregar subsegmento"
+            aria-label={`Agregar subsegmento en ${node.name}`}
+            onClick={() => onAdd(node)}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            className="icon-btn"
+            title="Editar segmento"
+            aria-label={`Editar ${node.name}`}
+            onClick={() => onEdit(node)}
+          >
+            ✎
+          </button>
+        </span>
+      </div>
+
+      {hasChildren && !isCollapsed ? (
+        <ul className="tree">
           {node.children.map((child) => (
-            <SegmentBranch
+            <TreeBranch
               key={child.id}
               node={child}
-              projectId={projectId}
-              allSegments={allSegments}
-              descendants={descendants}
+              collapsed={collapsed}
+              onToggle={onToggle}
+              onAdd={onAdd}
+              onEdit={onEdit}
             />
           ))}
         </ul>
@@ -133,25 +223,96 @@ function SegmentBranch({
   );
 }
 
-function SegmentRow({
-  node,
+function AddSegmentPopup({
   projectId,
+  parentId,
+  parentName,
+  onClose,
+}: {
+  projectId: string;
+  parentId: string | null;
+  parentName: string;
+  onClose: () => void;
+}) {
+  const [state, formAction, pending] = useActionState<FormState, FormData>(
+    createSegment.bind(null, projectId, parentId),
+    { error: null },
+  );
+  // Se queda abierto para encadenar varios segmentos seguidos, igual
+  // que la carga de gastos. La lista de abajo muestra los agregados.
+  const [added, setAdded] = useState<string[]>([]);
+  const [name, setName] = useState("");
+  const [lastState, setLastState] = useState(state);
+
+  if (state !== lastState) {
+    setLastState(state);
+    if (state.error === null) {
+      setAdded((prev) => [name, ...prev]);
+      setName("");
+    }
+  }
+
+  return (
+    <Popup
+      title={parentId ? "Nuevo subsegmento" : "Nuevo segmento"}
+      subtitle={parentId ? `Dentro de: ${parentName}` : "En la raíz del proyecto"}
+      onClose={onClose}
+      width={420}
+    >
+      <form action={formAction} className="popup-form">
+        <div className="field">
+          <label htmlFor="seg-name">Nombre del segmento *</label>
+          <input
+            id="seg-name"
+            name="name"
+            type="text"
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        {state.error ? <p className="form-error">{state.error}</p> : null}
+        <PopupActions
+          submitLabel="Agregar"
+          pending={pending}
+          onCancel={onClose}
+          cancelLabel={added.length > 0 ? "Listo" : "Cancelar"}
+        />
+      </form>
+
+      {added.length > 0 ? (
+        <div className="session-log">
+          <div className="session-log-head">
+            ✓ {added.length} segmento{added.length === 1 ? "" : "s"} agregado
+            {added.length === 1 ? "" : "s"}
+          </div>
+          <ul>
+            {added.map((n, i) => (
+              <li key={`${n}-${i}`}>{n}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </Popup>
+  );
+}
+
+function EditSegmentPopup({
+  node,
   allSegments,
-  descendants,
+  forbidden,
+  onClose,
 }: {
   node: TreeNode;
-  projectId: string;
   allSegments: SegmentNode[];
-  descendants: Map<string, Set<string>>;
+  forbidden: Set<string>;
+  onClose: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [adding, setAdding] = useState(false);
-
   const [renameState, renameAction, renaming] = useActionState<FormState, FormData>(
     renameSegment.bind(null, node.id),
     { error: null },
   );
-  const [reparentState, reparentAction] = useActionState<FormState, FormData>(
+  const [moveState, moveAction, moving] = useActionState<FormState, FormData>(
     reparentSegment.bind(null, node.id),
     { error: null },
   );
@@ -159,146 +320,95 @@ function SegmentRow({
     deleteSegment.bind(null, node.id),
     { error: null },
   );
+  const [confirming, setConfirming] = useState(false);
 
-  const forbidden = descendants.get(node.id) ?? new Set<string>();
-  const reparentOptions = allSegments.filter(
+  const options = allSegments.filter(
     (s) => s.id !== node.id && !forbidden.has(s.id),
   );
 
   return (
-    <div className="segment-row">
-      <div className="segment-row-main">
-        <span className="segment-name">{node.name}</span>
-        {node.childCount > 0 ? (
-          <span className="segment-badge">
-            {node.childCount} subsegmento{node.childCount === 1 ? "" : "s"}
-          </span>
-        ) : null}
-        {node.expenseCount > 0 ? (
-          <span className="segment-badge">
-            {node.expenseCount} gasto{node.expenseCount === 1 ? "" : "s"}
-          </span>
-        ) : null}
-        <span className="segment-actions">
-          <button
-            type="button"
-            className="link-btn"
-            onClick={() => setAdding((v) => !v)}
-          >
-            + Subsegmento
-          </button>
-          <button
-            type="button"
-            className="link-btn"
-            onClick={() => setEditing((v) => !v)}
-          >
-            {editing ? "Cerrar" : "Editar"}
-          </button>
-        </span>
-      </div>
-
-      {adding ? (
-        <div className="segment-sub">
-          <AddSegmentForm
-            projectId={projectId}
-            parentId={node.id}
-            label="Agregar"
-            onDone={() => setAdding(false)}
-          />
-        </div>
-      ) : null}
-
-      {editing ? (
-        <div className="segment-sub">
-          <form action={renameAction} className="row-form">
+    <Popup
+      title="Editar segmento"
+      subtitle={`${node.name} · ${formatGsSymbol(node.totalSpend)}`}
+      onClose={onClose}
+      width={440}
+    >
+      <form action={renameAction} className="popup-form">
+        <div className="field">
+          <label htmlFor="seg-rename">Nombre</label>
+          <div className="row-inline">
             <input
+              id="seg-rename"
               name="name"
               type="text"
               defaultValue={node.name}
-              aria-label="Nuevo nombre"
             />
-            <button className="btn" type="submit" disabled={renaming}>
+            <button type="submit" className="btn" disabled={renaming}>
               Renombrar
             </button>
-          </form>
-          {renameState.error ? (
-            <p className="form-error">{renameState.error}</p>
-          ) : null}
+          </div>
+        </div>
+        {renameState.error ? (
+          <p className="form-error">{renameState.error}</p>
+        ) : null}
+      </form>
 
-          <form action={reparentAction} className="row-form">
-            <label className="muted" style={{ fontSize: 12 }}>
-              Mover bajo:
-            </label>
-            <select name="parentId" defaultValue={node.parentId ?? ""}>
-              <option value="">— Raíz —</option>
-              {reparentOptions.map((s) => (
+      <form action={moveAction} className="popup-form">
+        <div className="field">
+          <label htmlFor="seg-move">Mover bajo</label>
+          <div className="row-inline">
+            <select id="seg-move" name="parentId" defaultValue={node.parentId ?? ""}>
+              <option value="">— Raíz del proyecto —</option>
+              {options.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
               ))}
             </select>
-            <button className="btn" type="submit">
+            <button type="submit" className="btn" disabled={moving}>
               Mover
             </button>
-          </form>
-          {reparentState.error ? (
-            <p className="form-error">{reparentState.error}</p>
-          ) : null}
+          </div>
+          <span className="hint">
+            No aparecen sus propios subsegmentos (evita ciclos).
+          </span>
+        </div>
+        {moveState.error ? <p className="form-error">{moveState.error}</p> : null}
+      </form>
 
-          <form action={deleteAction} className="row-form">
-            <button className="btn btn-danger" type="submit" disabled={deleting}>
-              Eliminar segmento
-            </button>
-            <span className="muted" style={{ fontSize: 12 }}>
-              Solo si no tiene subsegmentos.
-            </span>
-          </form>
+      <hr className="popup-sep" />
+
+      {confirming ? (
+        <form action={deleteAction} className="popup-form">
+          <p className="popup-text">
+            ¿Eliminar “{node.name}”? Sólo se puede si no tiene subsegmentos ni
+            gastos.
+          </p>
           {deleteState.error ? (
             <p className="form-error">{deleteState.error}</p>
           ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function AddSegmentForm({
-  projectId,
-  parentId,
-  label,
-  onDone,
-}: {
-  projectId: string;
-  parentId: string | null;
-  label: string;
-  onDone?: () => void;
-}) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
-    createSegment.bind(null, projectId, parentId),
-    { error: null },
-  );
-
-  return (
-    <div className="add-segment">
-      <form
-        action={async (fd) => {
-          await formAction(fd);
-          onDone?.();
-        }}
-        className="row-form"
-      >
-        <input
-          name="name"
-          type="text"
-          placeholder="Nombre del segmento"
-          required
-          aria-label="Nombre del segmento"
-        />
-        <button className="btn btn-primary" type="submit" disabled={pending}>
-          {pending ? "…" : label}
-        </button>
-      </form>
-      {state.error ? <p className="form-error">{state.error}</p> : null}
-    </div>
+          <PopupActions
+            submitLabel="Eliminar segmento"
+            pending={deleting}
+            onCancel={() => setConfirming(false)}
+            cancelLabel="Volver"
+            danger
+          />
+        </form>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={() => setConfirming(true)}
+          >
+            Eliminar segmento
+          </button>
+          <span className="hint" style={{ marginLeft: 10 }}>
+            Bloqueado si tiene subsegmentos o gastos.
+          </span>
+        </>
+      )}
+    </Popup>
   );
 }

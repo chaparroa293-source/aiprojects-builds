@@ -4,21 +4,23 @@ import {
   archiveProject,
   deleteProject,
   getProjectDetail,
+  listClientOptions,
   reviseProjectPrice,
   setProjectStatus,
   unarchiveProject,
+  updateProjectDetails,
 } from "@/lib/project-actions";
 import { listSegments } from "@/lib/segment-actions";
-import {
-  getQuickAddData,
-  listProjectExpenses,
-} from "@/lib/expense-actions";
-import { PriceRevisionPanel } from "@/app/_components/PriceRevisionPanel";
+import { listProjectExpenses } from "@/lib/expense-actions";
+import { getProjectTeam } from "@/lib/link-actions";
+import { SpendSummary } from "@/app/_components/SpendSummary";
 import { SegmentManager } from "@/app/_components/SegmentManager";
-import { StatusToggle } from "@/app/_components/StatusToggle";
+import { ExpenseList } from "@/app/_components/ExpenseList";
+import { ProjectTeamPanel } from "@/app/_components/ProjectTeamPanel";
 import { ProjectDangerZone } from "@/app/_components/ProjectDangerZone";
+import { ProjectFormPopup } from "@/app/_components/ProjectFormPopup";
 import { QuickAddExpense } from "@/app/_components/QuickAddExpense";
-import { ProjectExpensesList } from "@/app/_components/ProjectExpensesList";
+import { StatusToggle } from "@/app/_components/StatusToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -28,15 +30,15 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [project, segments, expenses, quickAddData] = await Promise.all([
+  const [project, segments, expenses, team, clients] = await Promise.all([
     getProjectDetail(id),
     listSegments(id),
     listProjectExpenses(id),
-    getQuickAddData(),
+    getProjectTeam(id),
+    listClientOptions(),
   ]);
   if (!project) notFound();
 
-  const revise = reviseProjectPrice.bind(null, id);
   const toggleStatus = setProjectStatus.bind(
     null,
     id,
@@ -46,52 +48,71 @@ export default async function ProjectDetailPage({
   return (
     <>
       <p className="breadcrumb">
-        <Link href="/proyectos">Proyectos</Link> / {project.name}
+        <Link href="/proyectos">← Proyectos</Link>
       </p>
 
       <div className="page-header">
         <div>
           <h1 className="page-title">{project.name}</h1>
-          <p className="muted" style={{ margin: "4px 0 0" }}>
-            {project.clientName ?? "Sin cliente asignado"} ·{" "}
+          <p className="muted subline">
+            {project.clientName ?? "Sin cliente asignado"}{" "}
             <span
-              className={`status-pill ${
+              className={`pill ${
                 project.status === "FINISHED" ? "is-finished" : "is-active"
               }`}
             >
               {project.status === "FINISHED" ? "Terminado" : "Activo"}
             </span>
             {project.archived ? (
-              <>
-                {" "}
-                <span className="status-pill is-finished">Archivado</span>
-              </>
+              <span className="pill is-finished">Archivado</span>
             ) : null}
           </p>
         </div>
         <div className="header-actions">
+          {/* Botón persistente de carga dentro del proyecto (además del
+              global de la barra lateral). */}
           <QuickAddExpense
-            data={quickAddData}
             lockedProjectId={id}
             triggerLabel="+ Registrar gasto"
             triggerClassName="btn btn-primary"
           />
-          <Link href={`/proyectos/${id}/editar`} className="btn">
-            Editar datos
-          </Link>
+          <ProjectFormPopup
+            action={updateProjectDetails.bind(null, id)}
+            clients={clients}
+            mode="edit"
+            triggerLabel="Editar"
+            triggerClassName="btn"
+            defaults={{
+              name: project.name,
+              clientId: project.clientId,
+              agreedTotalPrice: project.agreedTotalPrice,
+              status: project.status,
+            }}
+          />
           <StatusToggle status={project.status} onToggle={toggleStatus} />
         </div>
       </div>
 
-      <PriceRevisionPanel
-        currentPrice={project.agreedTotalPrice}
+      {/* 1. Lo primero: gastado vs. acordado. */}
+      <SpendSummary
+        agreedTotalPrice={project.agreedTotalPrice}
+        spend={project.expenseTotal}
         revisions={project.priceRevisions}
-        action={revise}
+        reviseAction={reviseProjectPrice.bind(null, id)}
       />
 
+      {/* 2. El árbol de segmentos. */}
       <SegmentManager projectId={id} segments={segments} />
 
-      <ProjectExpensesList projectId={id} expenses={expenses} />
+      {/* 3. Actividad reciente. */}
+      <ExpenseList
+        expenses={expenses}
+        title="Actividad reciente"
+        limit={8}
+        emptyText="Todavía no hay gastos. Usá “+ Registrar gasto” arriba."
+      />
+
+      <ProjectTeamPanel projectId={id} team={team} />
 
       <ProjectDangerZone
         projectName={project.name}

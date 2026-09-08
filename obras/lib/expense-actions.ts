@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { FIRM_ID } from "@/lib/firm";
 import { parseGs } from "@/lib/money";
@@ -320,7 +319,8 @@ export async function updateExpense(
 
   revalidatePath("/proyectos");
   revalidatePath(`/proyectos/${parsed.data.projectId}`);
-  redirect(`/proyectos/${parsed.data.projectId}`);
+  // Sin redirect: la edición ocurre en un popup sobre la página del proyecto.
+  return { error: null, savedAt: Date.now() };
 }
 
 export async function deleteExpense(
@@ -338,5 +338,5 @@ export async function deleteExpense(
 
   revalidatePath("/proyectos");
   revalidatePath(`/proyectos/${e.projectId}`);
-  redirect(`/proyectos/${e.projectId}`);
+  return { error: null, savedAt: Date.now() };
 }
