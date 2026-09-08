@@ -11,6 +11,10 @@ Practice Management System is a reusable practice-management system for independ
 - **Understand:** reporting and practice analytics.
 - **Capture:** a cross-product principle: recording what happened should require minimal navigation and required input.
 
-## Not in this foundation
+## Current implementation
 
-No workflows, UI, database schema, integrations, deployment, or AI/natural-language capture are implemented.
+Slice 1 implements the Client Directory: a professional can create, persist, list, view, edit, and reload a minimal client record.
+
+## Not yet implemented
+
+Scheduling, sessions, payments, follow-ups, reporting, authentication, deployment, and AI/natural-language capture are not implemented.

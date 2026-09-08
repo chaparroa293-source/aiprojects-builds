@@ -1,6 +1,6 @@
 # Practice Management System
 
-A reusable practice-management system for independent, session-based service professionals. This repository currently contains the project foundation only; no product workflows, UI, database schema, or external infrastructure have been implemented.
+A reusable practice-management system for independent, session-based service professionals. Slice 1 implements the Client Directory application backed by the shared AI Builds Supabase project; create, read, edit, and reload persistence are verified with fake development data.
 
 ## Start here
 
@@ -13,5 +13,6 @@ A reusable practice-management system for independent, session-based service pro
 
 - Tracked as a project folder in the parent `aiprojects-builds` repository on `main`.
 - GitHub remote: `origin` (`https://github.com/chaparroa293-source/aiprojects-builds.git`).
-- Frontend, database, authentication, deployment, and package manager: not selected.
-- First implementation work must be a single, approved vertical slice.
+- Stack: React, Vite, npm, and Supabase Postgres.
+- Implemented workflow: create, list, view, edit, and reload a persisted client.
+- Authentication and deployment remain deferred.

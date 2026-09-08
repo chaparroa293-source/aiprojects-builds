@@ -1,5 +1,5 @@
 # Core model
 
-The following concepts are candidates for the shared core: Contact, Client, Appointment, Session, Payment, Follow-up, and Note.
+The Client Directory establishes the first implemented core object: Client. Its stored fields are `id`, `nombre`, `apellido`, `telefono`, `email`, `notas`, `estado`, `created_at`, and `updated_at`.
 
-Relationships, cardinality, fields, identifiers, and persistence are intentionally undecided. They will be recorded here only when a vertical slice establishes observed requirements and data truth.
+Client currently has no relationships. Contact, Appointment, Session, Payment, Follow-up, and Note remain candidate concepts only; they are not implemented.
