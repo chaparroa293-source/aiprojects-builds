@@ -10,12 +10,22 @@ import {
   isDirectoryKind,
 } from "@/lib/directory-config";
 
+export type LinkedProjectRef = {
+  id: string;
+  name: string;
+  status: "ACTIVE" | "FINISHED";
+  archived: boolean;
+};
+
 export type DirectoryRecord = {
   id: string;
   name: string;
   phone: string | null;
   notes: string | null;
   activeProjectCount: number;
+  /** Nombres de los proyectos vinculados (todos, no sólo activos),
+   *  para mostrar la lista en vez de un número pelado. */
+  linkedProjects: LinkedProjectRef[];
 };
 
 function delegate(kind: DirectoryKind) {
@@ -88,24 +98,98 @@ async function activeProjectCounts(
   return counts;
 }
 
+/** Proyectos vinculados (todos) por registro del directorio. Solo lectura,
+ *  para mostrar los nombres en la lista en lugar de un conteo. */
+async function linkedProjectsByRecord(
+  kind: DirectoryKind,
+  ids: string[],
+): Promise<Map<string, LinkedProjectRef[]>> {
+  const map = new Map<string, LinkedProjectRef[]>();
+  if (ids.length === 0) return map;
+
+  const projSelect = {
+    id: true,
+    name: true,
+    status: true,
+    archivedAt: true,
+  } as const;
+  const toRef = (p: {
+    id: string;
+    name: string;
+    status: "ACTIVE" | "FINISHED";
+    archivedAt: Date | null;
+  }): LinkedProjectRef => ({
+    id: p.id,
+    name: p.name,
+    status: p.status,
+    archived: p.archivedAt !== null,
+  });
+  const push = (recordId: string, ref: LinkedProjectRef) => {
+    const list = map.get(recordId) ?? [];
+    if (!list.some((x) => x.id === ref.id)) list.push(ref);
+    map.set(recordId, list);
+  };
+
+  if (kind === "clientes") {
+    const rows = await prisma.project.findMany({
+      where: { firmId: FIRM_ID, clientId: { in: ids } },
+      orderBy: [{ status: "asc" }, { name: "asc" }],
+      select: { ...projSelect, clientId: true },
+    });
+    for (const p of rows) if (p.clientId) push(p.clientId, toRef(p));
+    return map;
+  }
+
+  if (kind === "proveedores") {
+    const [links, spends] = await Promise.all([
+      prisma.projectSupplier.findMany({
+        where: { firmId: FIRM_ID, supplierId: { in: ids } },
+        select: { supplierId: true, project: { select: projSelect } },
+      }),
+      prisma.expense.findMany({
+        where: { firmId: FIRM_ID, supplierId: { in: ids } },
+        distinct: ["supplierId", "projectId"],
+        select: { supplierId: true, project: { select: projSelect } },
+      }),
+    ]);
+    for (const l of links) if (l.supplierId) push(l.supplierId, toRef(l.project));
+    for (const e of spends) if (e.supplierId) push(e.supplierId, toRef(e.project));
+    return map;
+  }
+
+  const links = await prisma.projectEmployee.findMany({
+    where: { firmId: FIRM_ID, employeeId: { in: ids } },
+    select: { employeeId: true, project: { select: projSelect } },
+  });
+  for (const l of links) push(l.employeeId, toRef(l.project));
+  return map;
+}
+
 export async function listRecords(kind: DirectoryKind): Promise<DirectoryRecord[]> {
   const rows = await delegate(kind).findMany({
     where: { firmId: FIRM_ID },
     orderBy: { name: "asc" },
   });
 
-  const counts = await activeProjectCounts(
-    kind,
-    rows.map((r) => r.id),
-  );
+  const ids = rows.map((r) => r.id);
+  const [counts, linked] = await Promise.all([
+    activeProjectCounts(kind, ids),
+    linkedProjectsByRecord(kind, ids),
+  ]);
 
-  return rows.map((r) => ({
-    id: r.id,
-    name: r.name,
-    phone: r.phone,
-    notes: r.notes,
-    activeProjectCount: counts.get(r.id) ?? 0,
-  }));
+  return rows.map((r) => {
+    const projects = (linked.get(r.id) ?? []).sort((a, b) =>
+      a.name.localeCompare(b.name, "es"),
+    );
+    return {
+      id: r.id,
+      name: r.name,
+      phone: r.phone,
+      notes: r.notes,
+      activeProjectCount: counts.get(r.id) ?? 0,
+      linkedProjects: projects,
+    };
+  });
 }
 
 export async function getRecord(
@@ -116,13 +200,19 @@ export async function getRecord(
     where: { id, firmId: FIRM_ID },
   });
   if (!r) return null;
-  const counts = await activeProjectCounts(kind, [r.id]);
+  const [counts, linked] = await Promise.all([
+    activeProjectCounts(kind, [r.id]),
+    linkedProjectsByRecord(kind, [r.id]),
+  ]);
   return {
     id: r.id,
     name: r.name,
     phone: r.phone,
     notes: r.notes,
     activeProjectCount: counts.get(r.id) ?? 0,
+    linkedProjects: (linked.get(r.id) ?? []).sort((a, b) =>
+      a.name.localeCompare(b.name, "es"),
+    ),
   };
 }
 

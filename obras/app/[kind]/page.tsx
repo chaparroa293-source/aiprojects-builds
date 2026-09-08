@@ -48,7 +48,7 @@ export default async function DirectoryListPage({
               <tr>
                 <th>Nombre</th>
                 <th>Teléfono</th>
-                <th className="num">Proyectos activos</th>
+                <th>Proyectos</th>
               </tr>
             </thead>
             <tbody>
@@ -58,7 +58,34 @@ export default async function DirectoryListPage({
                     <Link href={`/${kind}/${r.id}`}>{r.name}</Link>
                   </td>
                   <td className={r.phone ? "" : "muted"}>{r.phone ?? "—"}</td>
-                  <td className="num muted">{r.activeProjectCount}</td>
+                  <td>
+                    {r.linkedProjects.length === 0 ? (
+                      <span className="muted">—</span>
+                    ) : (
+                      <span className="linked-projects">
+                        {r.linkedProjects.map((p) => (
+                          <Link
+                            key={p.id}
+                            href={`/proyectos/${p.id}`}
+                            className={`linked-project ${
+                              p.status === "FINISHED" || p.archived
+                                ? "is-past"
+                                : ""
+                            }`}
+                            title={
+                              p.archived
+                                ? "Archivado"
+                                : p.status === "FINISHED"
+                                  ? "Terminado"
+                                  : "Activo"
+                            }
+                          >
+                            {p.name}
+                          </Link>
+                        ))}
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

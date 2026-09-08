@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DIRECTORY_KINDS, DIRECTORY } from "@/lib/directory-config";
-import { QuickAddExpense } from "./QuickAddExpense";
+import { UniversalAdd } from "./UniversalAdd";
 import { GlobalSearch } from "./GlobalSearch";
 
 const STORE_KEY = "obras.sidebar.collapsed";
@@ -57,7 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="sidebar-brand">Obras</div>
 
         <div className="sidebar-quickadd">
-          <QuickAddExpense />
+          <UniversalAdd />
         </div>
 
         <nav className="sidebar-nav">
@@ -68,6 +68,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             data-active={isActive("/proyectos")}
           >
             Proyectos
+          </Link>
+          <Link
+            href="/historial"
+            className="sidebar-link"
+            data-active={isActive("/historial")}
+          >
+            Historial
           </Link>
           {/* El Panel llega en un slice posterior del plan. */}
           <span className="sidebar-link" data-disabled="true">

@@ -916,6 +916,174 @@ table.grid .num {
   margin: 0 0 10px;
 }
 
+/* ── Chip pickers (selección visual, reemplazan a los <select>) ── */
+.chip-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip-pick {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+  font: inherit;
+  padding: 7px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  line-height: 1.25;
+}
+.chip-pick:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface-alt);
+}
+.chip-pick[data-selected="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+.chip-pick:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.chip-picker-sm .chip-pick {
+  padding: 5px 10px;
+  font-size: 12.5px;
+}
+
+.chip-pick-label {
+  font-weight: 600;
+}
+.chip-pick-sub {
+  font-size: 11px;
+  opacity: 0.75;
+}
+.chip-pick[data-selected="true"] .chip-pick-sub {
+  opacity: 0.9;
+}
+.chip-pick-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  margin-top: 2px;
+  color: var(--accent);
+}
+.chip-pick[data-selected="true"] .chip-pick-tag {
+  color: var(--accent-fg);
+}
+
+.universal-types {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+/* Gasto (primera opción) siempre destacada aunque no esté elegida. */
+.universal-types .chip-pick:first-child {
+  border-color: var(--accent);
+  font-weight: 700;
+}
+.universal-types .chip-pick:first-child[data-selected="true"] {
+  border-color: var(--accent);
+}
+
+/* ── Project card grid ──────────────────────────────────── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: inherit;
+}
+.project-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.project-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.project-card-name {
+  font-weight: 700;
+  font-size: 15px;
+}
+.project-card-pills {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.project-card-client {
+  font-size: 12.5px;
+}
+.project-card-figure {
+  margin-top: 4px;
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-direction: column;
+}
+.project-card-figure-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.project-card-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Historial ──────────────────────────────────────────── */
+.history-section + .history-section {
+  margin-top: 22px;
+}
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 10px;
+}
+
+/* ── Linked projects in directory list ──────────────────── */
+.linked-projects {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+.linked-project {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.linked-project.is-past {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
 /* El fondo del cajón sólo existe en pantalla angosta. */
 .sidebar-scrim {
   display: none;
