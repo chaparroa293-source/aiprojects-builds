@@ -27,7 +27,7 @@ PWA: Planned, not implemented
 | Payment | Transaction | Planned | TBD |
 | FollowUp | Event | Planned | TBD |
 | Note | Record | Planned | TBD |
-| Appointment | Event | Deferred | TBD |
+| Appointment | Event | Built + Verified | Client |
 
 ## OBJECT SPECIFICATIONS
 
@@ -63,6 +63,22 @@ created_at: timestamptz, generated on create
 updated_at: timestamptz, generated on create and refreshed on update
 ```
 
+### Appointment
+
+```text
+TYPE: Event
+PERSISTENCE: practice_management.appointments
+id: uuid, generated primary key
+client_id: uuid, required foreign key
+fecha: date, required
+hora_inicio: time, required
+duracion_minutos: integer, optional/nullable; when supplied, > 0
+estado: text, required; programada | cancelada
+notas: text, optional
+created_at: timestamptz, generated on create
+updated_at: timestamptz, generated on create and refreshed on update
+```
+
 ## RELATIONSHIPS
 
 ```text
@@ -71,6 +87,14 @@ FROM: Client
 TO: Session
 CARDINALITY: 1:N
 FK: sessions.client_id → clients.id
+REQUIRED: yes
+REASSIGNMENT: unsupported
+
+REL-002
+FROM: Client
+TO: Appointment
+CARDINALITY: 1:N
+FK: appointments.client_id → clients.id
 REQUIRED: yes
 REASSIGNMENT: unsupported
 ```
@@ -89,6 +113,11 @@ RULE-008: Session client reassignment is unsupported.
 RULE-009: Session is neither a scheduling object nor a payment object.
 RULE-010: Important operational state must not exist only in frontend state.
 RULE-011: Every persisted operational object must have a defined retrieval path.
+RULE-012: Appointment.client_id must reference an existing Client and cannot be reassigned in the UI.
+RULE-013: Appointment.fecha and Appointment.hora_inicio are required.
+RULE-014: Appointment.duracion_minutos may be null; when supplied it is a positive integer.
+RULE-015: Appointment.estado is programada or cancelada.
+RULE-016: Appointment is planned work, not a Session; Appointment-to-Session conversion is not implemented.
 ```
 
 ## OPERATIONS
@@ -97,6 +126,7 @@ RULE-011: Every persisted operational object must have a defined retrieval path.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Client | Implemented | Directory/detail | Implemented | Unsupported | Name, email, phone | estado | Recent or name | — |
 | Session | Implemented | Client history/detail-edit | Implemented | Unsupported | Unsupported | Unsupported | fecha desc, hora_inicio desc | Implemented |
+| Appointment | Implemented | Client Agenda/detail-edit | Implemented | Unsupported | Unsupported | Unsupported | fecha asc, hora_inicio asc | Implemented |
 
 ## CAPTURE CONTRACTS
 
@@ -161,6 +191,17 @@ SORT/ORDER: fecha descending, then hora_inicio descending
 NAVIGATION: remains inside owning Client Detail; no global Sessions view
 ```
 
+### Client Agenda and Appointment Create/Detail/Edit
+
+```text
+PRIMARY DATA: Appointments scoped to current Client
+DISPLAY: fecha, hora_inicio, estado, duration only when present; full form on edit
+ACTIONS: create Appointment, open Appointment, update Appointment
+FILTER: none
+SORT/ORDER: fecha ascending, then hora_inicio ascending
+NAVIGATION: remains inside owning Client Detail; no global Agenda view
+```
+
 ## RETRIEVAL
 
 ```text
@@ -175,6 +216,12 @@ SESSION
 PRIMARY: Client Detail → Sesiones
 SCOPE: session.client_id = current client.id
 ORDER: fecha descending, hora_inicio descending
+GLOBAL VIEW: no
+
+APPOINTMENT
+PRIMARY: Client Detail → Agenda
+SCOPE: appointment.client_id = current client.id
+ORDER: fecha ascending, hora_inicio ascending
 GLOBAL VIEW: no
 ```
 
@@ -206,6 +253,7 @@ SCHEMA: practice_management
 DEVELOPMENT BROWSER ROLE: anon
 clients: SELECT / INSERT / UPDATE; NO DELETE
 sessions: SELECT / INSERT / UPDATE; NO DELETE
+appointments: SELECT / INSERT / UPDATE; NO DELETE
 AUTH: not implemented
 OWNERSHIP: not implemented
 RLS: deferred; not production-ready
@@ -233,6 +281,7 @@ APP STORE DISTRIBUTION: not required initially
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Client | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | Session | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Appointment | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 Verification evidence is recorded in `docs/BUILD_LOG.md`.
 
@@ -245,12 +294,15 @@ Client → Create → Persist → Directory → Detail → Edit → Persist → 
 SLICE 2 — Client Sessions — COMPLETE
 Client → Create Session → Persist → Client Session History → Detail → Edit → Persist → Reload
 CHECKPOINT: 4bc2a6aa5b7ec76916175c881508b754adc60ddf
+
+SLICE 3A — Appointment Foundation + Client Agenda — COMPLETE
+Client → Agenda → Create Appointment → Persist → Edit → Persist → Reload
 ```
 
 ## DEFERRED
 
 Planned: authentication; user/workspace ownership; RLS production hardening; payments; follow-ups; notes; Quick Capture UI; analytics implementation; Cloudflare deployment; PWA; production deployment.
 
-Deferred: Appointment/Scheduling.
+Deferred: Global Agenda; Appointment → Session conversion; payments.
 
 `Built` means implemented in code and schema; `verified` means evidence is recorded in the build log; `planned` and `deferred` are not implementation status.

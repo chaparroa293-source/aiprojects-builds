@@ -2,6 +2,7 @@ import { supabase } from './supabase.js'
 
 const clientFields = 'id, nombre, apellido, telefono, email, notas, estado, created_at, updated_at'
 const sessionFields = 'id, client_id, fecha, hora_inicio, duracion_minutos, estado, notas, created_at, updated_at'
+const appointmentFields = 'id, client_id, fecha, hora_inicio, duracion_minutos, estado, notas, created_at, updated_at'
 
 function databaseError(error) {
   return new Error(error.message || 'No se pudo completar la operación.')
@@ -72,6 +73,28 @@ export async function updateSession(id, session) {
     .select(sessionFields)
     .single()
 
+  if (error) throw databaseError(error)
+  return data
+}
+
+export async function listClientAppointments(clientId) {
+  const { data, error } = await supabase.schema('practice_management')
+    .from('appointments').select(appointmentFields).eq('client_id', clientId)
+    .order('fecha', { ascending: true }).order('hora_inicio', { ascending: true })
+  if (error) throw databaseError(error)
+  return data
+}
+
+export async function createAppointment(appointment) {
+  const { data, error } = await supabase.schema('practice_management')
+    .from('appointments').insert(appointment).select(appointmentFields).single()
+  if (error) throw databaseError(error)
+  return data
+}
+
+export async function updateAppointment(id, appointment) {
+  const { data, error } = await supabase.schema('practice_management')
+    .from('appointments').update(appointment).eq('id', id).select(appointmentFields).single()
   if (error) throw databaseError(error)
   return data
 }

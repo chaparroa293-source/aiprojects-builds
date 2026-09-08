@@ -59,7 +59,7 @@ The tutor predecessor application is the visual reference implementation: a dark
 
 ## Layout
 
-The shell uses a persistent sidebar on desktop and a compact navigation strip on narrow screens. Every active page follows eyebrow → serif title → short explanation → primary action → operational surface. The Clients surface adds controls, a readable table, and a detail/form panel; Client Detail uses restrained Datos/Sesiones tabs and becomes sequential on narrow screens.
+The shell uses a persistent sidebar on desktop and a compact navigation strip on narrow screens. Every active page follows eyebrow → serif title → short explanation → primary action → operational surface. The Clients surface adds controls, a readable table, and a detail/form panel; Client Detail uses restrained Datos/Agenda/Sesiones tabs and becomes sequential on narrow screens. Agenda stays client-scoped; it is not a global schedule surface.
 
 ## Elevation & Depth
 
