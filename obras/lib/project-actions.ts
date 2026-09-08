@@ -16,6 +16,10 @@ export type ProjectListItem = {
   status: ProjectStatus;
   archived: boolean;
   agreedTotalPrice: number;
+  /** Σ de los gastos del proyecto. Misma derivación "gastado a la
+   *  fecha" que getProjectDetail expone en la página del proyecto;
+   *  acá se agrega también para la tarjeta de la lista. */
+  expenseTotal: number;
   segmentCount: number;
   expenseCount: number;
 };
@@ -66,6 +70,16 @@ export async function listProjects({
       _count: { select: { segments: true, expenses: true } },
     },
   });
+
+  const spendRows = await prisma.expense.groupBy({
+    by: ["projectId"],
+    where: { firmId: FIRM_ID, projectId: { in: rows.map((p) => p.id) } },
+    _sum: { amount: true },
+  });
+  const spendByProject = new Map(
+    spendRows.map((s) => [s.projectId, Number(s._sum.amount ?? 0n)]),
+  );
+
   return rows.map((p) => ({
     id: p.id,
     name: p.name,
@@ -73,6 +87,7 @@ export async function listProjects({
     status: p.status,
     archived: p.archivedAt !== null,
     agreedTotalPrice: Number(p.agreedTotalPrice),
+    expenseTotal: spendByProject.get(p.id) ?? 0,
     segmentCount: p._count.segments,
     expenseCount: p._count.expenses,
   }));
