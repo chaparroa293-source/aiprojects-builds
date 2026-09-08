@@ -48,7 +48,12 @@ export default async function ProjectDetailPage({
   return (
     <>
       <p className="breadcrumb">
-        <Link href="/proyectos">← Proyectos</Link>
+        <Link href="/proyectos" className="btn btn-sm back-link">
+          <span className="back-arrow" aria-hidden="true">
+            ←
+          </span>
+          Proyectos
+        </Link>
       </p>
 
       <div className="page-header">

@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DIRECTORY, isDirectoryKind } from "@/lib/directory-config";
+import {
+  DIRECTORY,
+  isDirectoryKind,
+  type DirectoryKind,
+} from "@/lib/directory-config";
 import {
   deleteRecord,
   getDirectoryDetail,
@@ -8,9 +12,18 @@ import {
 } from "@/lib/directory-actions";
 import { DirectoryFormPopup } from "@/app/_components/DirectoryFormPopup";
 import { ConfirmDeleteButton } from "@/app/_components/ConfirmPopup";
-import { formatGsSymbol } from "@/lib/money";
+import { Gs } from "@/app/_components/Gs";
+import { PhoneLink } from "@/app/_components/PhoneLink";
 
 export const dynamic = "force-dynamic";
+
+// Versalitas sobre el nombre. "integrante del personal" es demasiado
+// largo para este renglón, así que cada directorio trae el suyo.
+const KICKER: Record<DirectoryKind, string> = {
+  clientes: "Cliente",
+  proveedores: "Proveedor",
+  personal: "Personal",
+};
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-PY", {
@@ -18,6 +31,10 @@ function fmtDate(iso: string) {
     month: "2-digit",
     year: "numeric",
   });
+}
+
+function plural(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`;
 }
 
 export default async function DirectoryDetailPage({
@@ -42,26 +59,36 @@ export default async function DirectoryDetailPage({
     return { error: null };
   }
 
+  // Sublínea de la cifra: qué hay detrás de ese número.
+  const statLabel =
+    expenses.length === 0
+      ? "gastado en total · sin gastos registrados"
+      : `gastado en total · ${plural(expenses.length, "gasto", "gastos")} en ${plural(projects.length, "proyecto", "proyectos")}`;
+
   return (
     <>
       <p className="breadcrumb">
-        <Link href={`/${kind}`}>← {meta.listTitle}</Link>
+        <Link href={`/${kind}`} className="btn btn-sm back-link">
+          <span className="back-arrow" aria-hidden="true">
+            ←
+          </span>
+          {meta.listTitle}
+        </Link>
       </p>
 
-      <div className="page-header">
+      <div className="record-head">
         <div>
-          <h1 className="page-title">{record.name}</h1>
-          <p className="muted subline">
-            {record.activeProjectCount} proyecto
-            {record.activeProjectCount === 1 ? "" : "s"} activo
-            {record.activeProjectCount === 1 ? "" : "s"}
-            {isSupplier && totalSpend !== null ? (
-              <> · {formatGsSymbol(totalSpend)} gastado en total</>
-            ) : null}
-          </p>
+          <p className="record-kicker">{KICKER[kind]}</p>
+          <h1 className="record-name">{record.name}</h1>
+          {/* El rol va pegado al nombre, como un cargo bajo una persona
+              — es identidad, no un dato suelto como el teléfono. */}
+          {kind === "personal" && record.rol ? (
+            <p className="record-role">{record.rol}</p>
+          ) : null}
         </div>
-        <div className="header-actions">
+        <div className="record-actions">
           <DirectoryFormPopup
+            kind={kind}
             action={updateRecord.bind(null, kind, id)}
             title={`Editar ${meta.singular}`}
             submitLabel="Guardar cambios"
@@ -72,6 +99,7 @@ export default async function DirectoryDetailPage({
           <ConfirmDeleteButton
             action={confirmDelete}
             triggerLabel="Eliminar"
+            triggerClassName="btn btn-danger"
             title={`Eliminar ${meta.singular}`}
             body={
               <>
@@ -84,32 +112,52 @@ export default async function DirectoryDetailPage({
         </div>
       </div>
 
+      {/* Cifra + datos sueltos en un panel, como cualquier sección del
+          resto de la app. Sin encabezado propio: el nombre de arriba ya
+          dice de quién son estos datos. */}
       <section className="panel">
-        <div className="panel-head">
-          <h2 className="panel-title">Datos</h2>
-        </div>
-        <dl className="data-list">
+        {isSupplier ? (
+          <div className="record-stat">
+            <div className="record-stat-value">
+              <Gs value={totalSpend ?? 0} />
+            </div>
+            <p className="record-stat-label">{statLabel}</p>
+          </div>
+        ) : null}
+
+        <dl className="record-facts">
+          {isSupplier ? null : (
+            <div>
+              <dt>Proyectos activos</dt>
+              <dd>{record.activeProjectCount}</dd>
+            </div>
+          )}
           <div>
             <dt>Teléfono</dt>
-            <dd className={record.phone ? "" : "muted"}>
-              {record.phone ?? "—"}
+            <dd className={record.phone ? "" : "is-empty"}>
+              {record.phone ? (
+                <PhoneLink phone={record.phone} />
+              ) : (
+                "Sin registrar"
+              )}
             </dd>
           </div>
           <div>
             <dt>RUC</dt>
-            <dd className={record.ruc ? "" : "muted"}>{record.ruc ?? "—"}</dd>
+            <dd className={record.ruc ? "" : "is-empty"}>
+              {record.ruc ?? "Sin registrar"}
+            </dd>
           </div>
+          {record.notes ? (
+            <div>
+              <dt>Notas</dt>
+              <dd>
+                <p className="record-notes">{record.notes}</p>
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </section>
-
-      {record.notes ? (
-        <section className="panel">
-          <div className="panel-head">
-            <h2 className="panel-title">Notas</h2>
-          </div>
-          <p className="notes-text">{record.notes}</p>
-        </section>
-      ) : null}
 
       <section className="panel">
         <div className="panel-head">
@@ -119,16 +167,42 @@ export default async function DirectoryDetailPage({
         {projects.length === 0 ? (
           <p className="muted">
             {kind === "clientes"
-              ? "Todavía no es cliente de ningún proyecto."
-              : "Todavía no está vinculado a ningún proyecto. Se vincula desde la página de la obra."}
+              ? "Ninguno todavía."
+              : "Ninguno. Se vinculan desde la página de la obra."}
           </p>
+        ) : isSupplier ? (
+          // Es contexto histórico, no algo que el proveedor "usa" día a
+          // día — una fila de etiquetas pesa menos que una tabla con su
+          // propio encabezado. El detalle de gasto por obra ya está en
+          // la ficha del proyecto; acá alcanza con la referencia.
+          <ul className="tag-list">
+            {projects.map((p) => {
+              const past = p.status === "FINISHED" || p.archived;
+              return (
+                <li key={p.id}>
+                  <Link
+                    href={`/proyectos/${p.id}`}
+                    className={`tag-chip ${past ? "is-past" : ""}`}
+                    title={
+                      p.archived
+                        ? "Archivado"
+                        : p.status === "FINISHED"
+                          ? "Terminado"
+                          : "Activo"
+                    }
+                  >
+                    {p.name}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <table className="grid">
             <thead>
               <tr>
                 <th>Proyecto</th>
                 <th>Estado</th>
-                {isSupplier ? <th className="num">Gastado ahí</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -149,11 +223,6 @@ export default async function DirectoryDetailPage({
                       <span className="pill is-finished">Archivado</span>
                     ) : null}
                   </td>
-                  {isSupplier ? (
-                    <td className="num strong">
-                      {formatGsSymbol(p.spend ?? 0)}
-                    </td>
-                  ) : null}
                 </tr>
               ))}
             </tbody>
@@ -164,13 +233,14 @@ export default async function DirectoryDetailPage({
       {isSupplier ? (
         <section className="panel">
           <div className="panel-head">
-            <h2 className="panel-title">Gastos con este proveedor</h2>
+            <h2 className="panel-title">Gastos</h2>
             <span className="muted">
-              {expenses.length} · {formatGsSymbol(totalSpend ?? 0)}
+              {expenses.length} gasto{expenses.length === 1 ? "" : "s"} ·{" "}
+              <Gs value={totalSpend ?? 0} />
             </span>
           </div>
           {expenses.length === 0 ? (
-            <p className="muted">Todavía no hay gastos con este proveedor.</p>
+            <p className="muted">Ninguno todavía.</p>
           ) : (
             <table className="grid">
               <thead>
@@ -193,7 +263,9 @@ export default async function DirectoryDetailPage({
                         <span className="muted"> · {e.description}</span>
                       ) : null}
                     </td>
-                    <td className="num strong">{formatGsSymbol(e.amount)}</td>
+                    <td className="num strong">
+                        <Gs value={e.amount} />
+                      </td>
                   </tr>
                 ))}
               </tbody>

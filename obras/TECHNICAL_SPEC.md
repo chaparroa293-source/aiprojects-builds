@@ -39,11 +39,19 @@ document almost certainly does not change.
 
 ## System-wide truths
 
-- **One firm.** There is no `Firm` table and no authentication. Every
+- **One firm.** There is no `Firm` table and no user model. Every
   table carries a `firm_id` column; every read is filtered by it and
   every write stamps it, using a single constant id
   (`DEFAULT_FIRM_ID`, default `"firm_default"`). The column exists so
   multi-firm is a data change, not a schema change, later.
+- **One shared gate, no identities.** The whole app sits behind a
+  single shared password (`AUTH_PASSWORD_HASH`, a scrypt hash;
+  `SESSION_SECRET` signs the session). Access is all-or-nothing: there
+  are no accounts, roles, permissions, or per-actor attribution, and
+  nothing is recorded about *who* performed an action. The session is
+  a signed, expiring cookie — **no `Session` or `User` table exists**,
+  so this adds no domain object. Missing or malformed configuration
+  denies access rather than granting it.
 - **Money is guaraníes, integer, no decimals.** Amounts persist as
   Postgres `BIGINT` and cross into the app as JavaScript `number`
   (guaraní magnitudes are assumed to stay within safe-integer range).
@@ -401,6 +409,7 @@ ProjectEmployee**. `Request`, `Note`, and `Attachment` appear in
 
 | Route | View |
 |---|---|
+| `/ingresar` | shared-password gate; the only route reachable without a session |
 | `/` | redirect → `/clientes` |
 | `/clientes`, `/proveedores`, `/personal` | directory list for that kind (name, phone, linked project names) |
 | `/clientes/[id]`, `/proveedores/[id]`, `/personal/[id]` | full-screen directory record detail (contact data incl. RUC, notes, linked projects; for suppliers also per-project spend and an expense list) |
@@ -419,7 +428,9 @@ context.
 
 - **Request, Note, Attachment** — described in `specs/v1/spec.md`, not
   built. No tables, routes, or operations exist.
-- **Firm / User / auth** — single implicit firm; no login.
+- **Firm / User** — single implicit firm; no user records, no roles,
+  no permissions, no per-actor attribution. The password gate above is
+  a deployment boundary, not an identity model.
 - **Multi-currency** — guaraníes only.
 - **A layer between Project and Segment** (sprints / phases /
   milestones) — considered and explicitly parked; Project → Segment is

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DirectoryRecord, FormState } from "@/lib/directory-actions";
+import type { DirectoryKind } from "@/lib/directory-config";
 import { Popup } from "./Popup";
 import { DirectoryQuickForm } from "./DirectoryQuickForm";
 
@@ -15,6 +16,7 @@ type Action = (prev: FormState, formData: FormData) => Promise<FormState>;
  * compartido con UniversalAdd.
  */
 export function DirectoryFormPopup({
+  kind,
   action,
   title,
   submitLabel,
@@ -22,6 +24,7 @@ export function DirectoryFormPopup({
   triggerClassName = "btn btn-primary",
   record,
 }: {
+  kind: DirectoryKind;
   action: Action;
   title: string;
   submitLabel: string;
@@ -45,6 +48,7 @@ export function DirectoryFormPopup({
       {open ? (
         <Popup title={title} onClose={() => setOpen(false)} width={420}>
           <DirectoryQuickForm
+            kind={kind}
             action={action}
             submitLabel={submitLabel}
             record={record}

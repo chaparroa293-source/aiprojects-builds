@@ -3,7 +3,8 @@
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FormState, PriceRevisionItem } from "@/lib/project-actions";
-import { formatGsSymbol } from "@/lib/money";
+import { formatGsSymbol, formatSpendPct, spendBarWidth } from "@/lib/money";
+import { Gs } from "./Gs";
 import { Popup, PopupActions } from "./Popup";
 import { useActionSuccess } from "./useActionSuccess";
 
@@ -45,10 +46,8 @@ export function SpendSummary({
   });
 
   const remaining = agreedTotalPrice - spend;
-  const pct =
-    agreedTotalPrice > 0
-      ? Math.min(100, Math.round((spend / agreedTotalPrice) * 100))
-      : 0;
+  const pctLabel = formatSpendPct(spend, agreedTotalPrice);
+  const barWidth = spendBarWidth(spend, agreedTotalPrice);
   const over = remaining < 0;
 
   return (
@@ -56,18 +55,22 @@ export function SpendSummary({
       <div className="spend-grid">
         <div className="spend-cell">
           <span className="spend-label">Gastado a la fecha</span>
-          <span className="spend-value">{formatGsSymbol(spend)}</span>
+          <span className="spend-value">
+            <Gs value={spend} />
+          </span>
         </div>
         <div className="spend-cell">
           <span className="spend-label">Precio acordado</span>
-          <span className="spend-value">{formatGsSymbol(agreedTotalPrice)}</span>
+          <span className="spend-value">
+            <Gs value={agreedTotalPrice} />
+          </span>
         </div>
         <div className="spend-cell">
           <span className="spend-label">
             {over ? "Excedido por" : "Diferencia"}
           </span>
           <span className={`spend-value ${over ? "is-over" : "is-ok"}`}>
-            {formatGsSymbol(Math.abs(remaining))}
+            <Gs value={Math.abs(remaining)} />
           </span>
         </div>
       </div>
@@ -75,12 +78,12 @@ export function SpendSummary({
       <div className="spend-bar" aria-hidden="true">
         <div
           className={`spend-bar-fill ${over ? "is-over" : ""}`}
-          style={{ width: `${over ? 100 : pct}%` }}
+          style={{ width: `${barWidth}%` }}
         />
       </div>
       <p className="spend-caption">
         {agreedTotalPrice > 0
-          ? `${pct}% del precio acordado`
+          ? `${pctLabel} del precio acordado`
           : "Sin precio acordado cargado"}
         {" · "}
         <button
@@ -114,7 +117,7 @@ export function SpendSummary({
         >
           <form action={formAction} className="popup-form">
             <div className="field">
-              <label htmlFor="rev-value">Nuevo precio (₲) *</label>
+              <label htmlFor="rev-value">Nuevo precio (₲)</label>
               <input
                 id="rev-value"
                 name="newValue"
@@ -148,7 +151,7 @@ export function SpendSummary({
             {revisions.map((r) => (
               <li key={r.id}>
                 <span className="muted">{fmtDate(r.createdAt)}</span>{" "}
-                {formatGsSymbol(r.oldValue)} → {formatGsSymbol(r.newValue)}
+                <Gs value={r.oldValue} /> → <Gs value={r.newValue} />
                 {r.reason ? <span className="muted"> · {r.reason}</span> : null}
               </li>
             ))}

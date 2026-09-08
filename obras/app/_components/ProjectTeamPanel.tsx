@@ -38,8 +38,8 @@ export function ProjectTeamPanel({
       </div>
 
       <div className="team-block">
-        <div className="team-label">
-          Proveedores
+        <div className="team-block-head">
+          <h3 className="team-block-title">Proveedores</h3>
           <button
             type="button"
             className="link-btn"
@@ -58,8 +58,8 @@ export function ProjectTeamPanel({
       </div>
 
       <div className="team-block">
-        <div className="team-label">
-          Personal
+        <div className="team-block-head">
+          <h3 className="team-block-title">Personal</h3>
           <button
             type="button"
             className="link-btn"

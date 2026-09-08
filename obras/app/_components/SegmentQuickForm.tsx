@@ -80,7 +80,7 @@ export function SegmentQuickForm({
   return (
     <form action={formAction} className="popup-form">
       <div className="field">
-        <label>Proyecto *</label>
+        <label>Proyecto</label>
         <ChipPicker
           ariaLabel="Proyecto"
           options={options}
@@ -90,7 +90,7 @@ export function SegmentQuickForm({
       </div>
 
       <div className="field">
-        <label htmlFor="sq-name">Nombre del segmento *</label>
+        <label htmlFor="sq-name">Nombre del segmento</label>
         <input id="sq-name" name="name" type="text" autoFocus />
         <span className="hint">
           Entra en la raíz del proyecto. Lo movés/anidás desde el árbol.

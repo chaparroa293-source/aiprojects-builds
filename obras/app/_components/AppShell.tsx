@@ -3,15 +3,55 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DIRECTORY_KINDS, DIRECTORY } from "@/lib/directory-config";
+import {
+  Archive,
+  Gauge,
+  HandshakeIcon,
+  HardHat,
+  LogOut,
+  Truck,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import {
+  DIRECTORY_KINDS,
+  DIRECTORY,
+  type DirectoryKind,
+} from "@/lib/directory-config";
+import { logout } from "@/lib/auth-actions";
 import { UniversalAdd } from "./UniversalAdd";
 import { GlobalSearch } from "./GlobalSearch";
 
 const STORE_KEY = "obras.sidebar.collapsed";
 
+// Íconos sacados del mundo de la obra, no del catálogo genérico: el
+// casco es el proyecto, el camión es el proveedor que entrega en obra,
+// el apretón de manos es el cliente. Uno por ítem, mismo trazo.
+const ICON_SIZE = 16;
+const ICON_STROKE = 1.5;
+
+const DIRECTORY_ICON: Record<DirectoryKind, LucideIcon> = {
+  clientes: HandshakeIcon,
+  proveedores: Truck,
+  personal: Users,
+};
+
+function NavIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <Icon
+      className="sidebar-icon"
+      size={ICON_SIZE}
+      strokeWidth={ICON_STROKE}
+      aria-hidden="true"
+    />
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  // La pantalla de ingreso no lleva navegación: todavía no hay a dónde ir.
+  const bare = pathname === "/ingresar";
 
   // Restaurar la preferencia al montar. En pantalla angosta la barra
   // arranca cerrada (es un cajón que tapa el contenido).
@@ -42,6 +82,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
 
+  if (bare) return <>{children}</>;
+
   return (
     <div className="app-shell" data-collapsed={collapsed}>
       {/* Fondo que cierra el cajón en pantalla angosta (clic afuera). */}
@@ -67,6 +109,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="sidebar-link"
             data-active={isActive("/proyectos")}
           >
+            <NavIcon icon={HardHat} />
             Proyectos
           </Link>
           <Link
@@ -74,12 +117,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="sidebar-link"
             data-active={isActive("/historial")}
           >
+            <NavIcon icon={Archive} />
             Historial
           </Link>
-          {/* El Panel llega en un slice posterior del plan. */}
-          <span className="sidebar-link" data-disabled="true">
+          <Link
+            href="/panel"
+            className="sidebar-link"
+            data-active={isActive("/panel")}
+          >
+            <NavIcon icon={Gauge} />
             Panel
-          </span>
+          </Link>
         </nav>
 
         <nav className="sidebar-nav">
@@ -91,10 +139,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="sidebar-link"
               data-active={isActive(`/${kind}`)}
             >
+              <NavIcon icon={DIRECTORY_ICON[kind]} />
               {DIRECTORY[kind].navLabel}
             </Link>
           ))}
         </nav>
+
+        <form action={logout} className="sidebar-logout">
+          <button type="submit" className="sidebar-link sidebar-logout-btn">
+            <NavIcon icon={LogOut} />
+            Salir
+          </button>
+        </form>
       </aside>
 
       <div className="content">

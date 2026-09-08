@@ -7,7 +7,7 @@ import {
   type QuickAddData,
   type QuickAddProject,
 } from "@/lib/expense-actions";
-import { formatGsSymbol } from "@/lib/money";
+import { Gs } from "./Gs";
 import { ChipPicker, type ChipOption } from "./ChipPicker";
 
 function todayISO() {
@@ -234,7 +234,7 @@ export function ExpenseQuickForm({
 
         {!lockedProjectId ? (
           <div className="field">
-            <label>Proyecto *</label>
+            <label>Proyecto</label>
             <ChipPicker
               ariaLabel="Proyecto"
               options={projectOptions}
@@ -245,7 +245,7 @@ export function ExpenseQuickForm({
         ) : null}
 
         <div className="field">
-          <label>Segmento *</label>
+          <label>Segmento</label>
           {!currentProject ? (
             <p className="hint">Elegí un proyecto primero.</p>
           ) : segChips.length === 0 ? (
@@ -264,7 +264,7 @@ export function ExpenseQuickForm({
         </div>
 
         <div className="field">
-          <label htmlFor="eq-amount">Monto (₲) *</label>
+          <label htmlFor="eq-amount">Monto (₲)</label>
           <input
             id="eq-amount"
             name="amount"
@@ -277,34 +277,36 @@ export function ExpenseQuickForm({
           />
         </div>
 
+        {/* Proveedor a la vista, no escondido detrás del desplegable:
+            estaba tan fuera del camino que casi ningún gasto llegaba
+            con proveedor cargado. Sigue siendo opcional — "Sin
+            proveedor" es la primera opción y la elegida por defecto. */}
+        <div className="field">
+          <label>Proveedor</label>
+          <ChipPicker
+            ariaLabel="Proveedor"
+            size="sm"
+            options={supplierOptions}
+            value={supplierChoice}
+            onChange={setSupplierChoice}
+          />
+        </div>
+
+        {supplierChoice === NEW_SUPPLIER ? (
+          <div className="field">
+            <label htmlFor="eq-new-supplier">Nombre del nuevo proveedor</label>
+            <input
+              id="eq-new-supplier"
+              name="newSupplierName"
+              type="text"
+              value={newSupplierName}
+              onChange={(e) => setNewSupplierName(e.target.value)}
+            />
+          </div>
+        ) : null}
+
         {showOptional ? (
           <>
-            <div className="field">
-              <label>Proveedor</label>
-              <ChipPicker
-                ariaLabel="Proveedor"
-                size="sm"
-                options={supplierOptions}
-                value={supplierChoice}
-                onChange={setSupplierChoice}
-              />
-            </div>
-
-            {supplierChoice === NEW_SUPPLIER ? (
-              <div className="field">
-                <label htmlFor="eq-new-supplier">
-                  Nombre del nuevo proveedor
-                </label>
-                <input
-                  id="eq-new-supplier"
-                  name="newSupplierName"
-                  type="text"
-                  value={newSupplierName}
-                  onChange={(e) => setNewSupplierName(e.target.value)}
-                />
-              </div>
-            ) : null}
-
             <div className="field">
               <label htmlFor="eq-date">Fecha del gasto</label>
               <input
@@ -333,7 +335,7 @@ export function ExpenseQuickForm({
             className="link-btn"
             onClick={() => setShowOptional(true)}
           >
-            + Proveedor, fecha o nota
+            + Fecha o nota
           </button>
         )}
 
@@ -350,13 +352,13 @@ export function ExpenseQuickForm({
         <div className="session-log">
           <div className="session-log-head">
             ✓ {logged.length} gasto{logged.length === 1 ? "" : "s"} registrado
-            {logged.length === 1 ? "" : "s"} · {formatGsSymbol(totalLogged)}
+            {logged.length === 1 ? "" : "s"} · <Gs value={totalLogged} />
           </div>
           <ul>
             {logged.map((l) => (
               <li key={l.key}>
                 <span className="session-log-amount">
-                  {formatGsSymbol(l.amount)}
+                  <Gs value={l.amount} />
                 </span>{" "}
                 <span className="muted">
                   {l.projectName} · {l.segmentLabel}

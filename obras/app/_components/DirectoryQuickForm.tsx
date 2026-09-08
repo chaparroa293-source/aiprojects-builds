@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import type { DirectoryRecord, FormState } from "@/lib/directory-actions";
+import type { DirectoryKind } from "@/lib/directory-config";
 import { PopupActions } from "./Popup";
 import { useActionSuccess } from "./useActionSuccess";
 
@@ -13,12 +14,14 @@ type Action = (prev: FormState, formData: FormData) => Promise<FormState>;
  * (en las páginas del directorio) como UniversalAdd.
  */
 export function DirectoryQuickForm({
+  kind,
   action,
   submitLabel,
   record,
   onCancel,
   onSaved,
 }: {
+  kind: DirectoryKind;
   action: Action;
   submitLabel: string;
   record?: DirectoryRecord;
@@ -34,7 +37,7 @@ export function DirectoryQuickForm({
   return (
     <form action={formAction} className="popup-form">
       <div className="field">
-        <label htmlFor="dir-name">Nombre *</label>
+        <label htmlFor="dir-name">Nombre</label>
         <input
           id="dir-name"
           name="name"
@@ -62,6 +65,18 @@ export function DirectoryQuickForm({
           defaultValue={record?.ruc ?? ""}
         />
       </div>
+      {kind === "personal" ? (
+        <div className="field">
+          <label htmlFor="dir-rol">Rol</label>
+          <input
+            id="dir-rol"
+            name="rol"
+            type="text"
+            placeholder="Albañil, electricista…"
+            defaultValue={record?.rol ?? ""}
+          />
+        </div>
+      ) : null}
       <div className="field">
         <label htmlFor="dir-notes">Notas</label>
         <textarea

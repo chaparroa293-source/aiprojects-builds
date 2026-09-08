@@ -8,3 +8,6 @@ lib/generated/
 .pg-local/
 AGENTS.md
 CLAUDE.md
+
+# Config local del preview del navegador (no es del proyecto).
+.claude/launch.json

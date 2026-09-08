@@ -25,3 +25,32 @@ export function parseGs(input: string): number | null {
   if (!Number.isSafeInteger(n) || n < 0) return null;
   return n;
 }
+
+/**
+ * Porcentaje del precio acordado ya consumido, tal como se muestra.
+ * Una sola definición para las dos superficies que lo enseñan (la
+ * tarjeta de proyecto y el resumen del proyecto): antes la tarjeta
+ * decía "<1%" y el resumen "0%" del mismo proyecto.
+ *
+ *  - sin precio acordado -> "—"
+ *  - hay gasto pero redondea a 0 -> "<1%"
+ *  - excedido -> el porcentaje real, sin techo (185%, no 100%)
+ */
+export function formatSpendPct(spent: number, agreed: number): string {
+  if (agreed <= 0) return "—";
+  const pct = Math.round((spent / agreed) * 100);
+  if (pct === 0 && spent > 0) return "<1%";
+  return `${pct}%`;
+}
+
+/**
+ * Ancho de la barra de consumo, 0–100. Se separa del rótulo a
+ * propósito: la barra sí tiene techo (no puede pasarse del riel),
+ * el número no. Con gasto que redondea a 0% deja un mínimo visible
+ * para que la barra no parezca vacía.
+ */
+export function spendBarWidth(spent: number, agreed: number): number {
+  if (agreed <= 0 || spent <= 0) return 0;
+  const pct = Math.round((spent / agreed) * 100);
+  return Math.max(2, Math.min(100, pct));
+}

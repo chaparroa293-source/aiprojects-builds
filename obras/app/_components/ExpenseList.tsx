@@ -11,6 +11,7 @@ import {
   type ExpenseListItem,
 } from "@/lib/expense-actions";
 import { formatGs, formatGsSymbol } from "@/lib/money";
+import { Gs } from "./Gs";
 import { Popup, PopupActions } from "./Popup";
 import { useActionSuccess } from "./useActionSuccess";
 
@@ -45,7 +46,7 @@ export function ExpenseList({
         <h2 className="panel-title">{title}</h2>
         <span className="muted">
           {expenses.length} gasto{expenses.length === 1 ? "" : "s"} ·{" "}
-          {formatGsSymbol(expenses.reduce((a, e) => a + e.amount, 0))}
+          <Gs value={expenses.reduce((a, e) => a + e.amount, 0)} />
         </span>
       </div>
 
@@ -76,7 +77,9 @@ export function ExpenseList({
                   <td className={e.supplierName ? "" : "muted"}>
                     {e.supplierName ?? "—"}
                   </td>
-                  <td className="num strong">{formatGsSymbol(e.amount)}</td>
+                  <td className="num strong">
+                    <Gs value={e.amount} />
+                  </td>
                   <td className="num">
                     <button
                       type="button"
@@ -169,7 +172,7 @@ function ExpenseEditPopup({
       ) : confirming ? (
         <form action={remove} className="popup-form">
           <p className="popup-text">
-            ¿Eliminar este gasto de {formatGsSymbol(ctx.expense.amount)}? Es un
+            ¿Eliminar este gasto de <Gs value={ctx.expense.amount} />? Es un
             registro de dinero: no se puede deshacer.
           </p>
           {deleteState.error ? (
@@ -193,7 +196,7 @@ function ExpenseEditPopup({
             />
 
             <div className="field">
-              <label htmlFor="ex-segment">Segmento *</label>
+              <label htmlFor="ex-segment">Segmento</label>
               <select
                 id="ex-segment"
                 name="segmentId"
@@ -208,7 +211,7 @@ function ExpenseEditPopup({
             </div>
 
             <div className="field">
-              <label htmlFor="ex-amount">Monto (₲) *</label>
+              <label htmlFor="ex-amount">Monto (₲)</label>
               <input
                 id="ex-amount"
                 name="amount"

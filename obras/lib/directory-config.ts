@@ -18,6 +18,8 @@ type DirectoryMeta = {
   emptyText: string;
   /** Texto del botón de alta. */
   addLabel: string;
+  /** Placeholder del filtro de la lista. */
+  filterLabel: string;
 };
 
 export const DIRECTORY: Record<DirectoryKind, DirectoryMeta> = {
@@ -29,6 +31,7 @@ export const DIRECTORY: Record<DirectoryKind, DirectoryMeta> = {
     article: "el",
     emptyText: "Todavía no hay clientes cargados.",
     addLabel: "Nuevo cliente",
+    filterLabel: "Buscar cliente por nombre",
   },
   proveedores: {
     model: "supplier",
@@ -38,6 +41,7 @@ export const DIRECTORY: Record<DirectoryKind, DirectoryMeta> = {
     article: "el",
     emptyText: "Todavía no hay proveedores cargados.",
     addLabel: "Nuevo proveedor",
+    filterLabel: "Buscar proveedor por nombre",
   },
   personal: {
     model: "employee",
@@ -47,6 +51,7 @@ export const DIRECTORY: Record<DirectoryKind, DirectoryMeta> = {
     article: "el",
     emptyText: "Todavía no hay personal cargado.",
     addLabel: "Nuevo integrante",
+    filterLabel: "Buscar persona por nombre",
   },
 };
 

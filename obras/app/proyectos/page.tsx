@@ -29,9 +29,7 @@ export default async function ProjectsListPage() {
       </div>
 
       {projects.length === 0 ? (
-        <div className="panel">
-          <p className="empty-state">No hay proyectos activos.</p>
-        </div>
+        <p className="empty-line">No hay proyectos activos.</p>
       ) : (
         <div className="card-grid">
           {projects.map((p) => (

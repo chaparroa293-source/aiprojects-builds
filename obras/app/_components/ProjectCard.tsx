@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ProjectListItem } from "@/lib/project-actions";
-import { formatGs, formatGsSymbol } from "@/lib/money";
+import { formatSpendPct, spendBarWidth } from "@/lib/money";
+import { Gs } from "./Gs";
 
 /**
  * Tarjeta de proyecto para /proyectos y /historial.
@@ -17,12 +18,8 @@ export function ProjectCard({ project }: { project: ProjectListItem }) {
   const agreed = project.agreedTotalPrice;
   const diff = agreed - spent; // > 0 margen; < 0 excedido
   const over = diff < 0;
-  const pct = agreed > 0 ? Math.round((spent / agreed) * 100) : 0;
-  const pctLabel =
-    agreed <= 0 ? "—" : pct === 0 && spent > 0 ? "<1%" : `${pct}%`;
-  // Que la barra muestre algo cuando hay gasto pero redondea a 0%.
-  const barWidth =
-    agreed <= 0 || spent === 0 ? 0 : Math.max(2, Math.min(100, pct));
+  const pctLabel = formatSpendPct(spent, agreed);
+  const barWidth = spendBarWidth(spent, agreed);
 
   return (
     <Link href={`/proyectos/${project.id}`} className="project-card">
@@ -51,7 +48,7 @@ export function ProjectCard({ project }: { project: ProjectListItem }) {
       <div className="project-card-money">
         <div className="project-card-spent-row">
           <span className={`project-card-spent ${over ? "is-over" : ""}`}>
-            {formatGsSymbol(spent)}
+            <Gs value={spent} />
           </span>
           <span className={`project-card-pct ${over ? "is-over" : ""}`}>
             {pctLabel}
@@ -67,10 +64,14 @@ export function ProjectCard({ project }: { project: ProjectListItem }) {
         </div>
 
         <div className="project-card-underbar">
-          <span>de {formatGs(agreed)}</span>
-          <span className={over ? "is-over" : "is-ok"}>
+          <span>
+            de <Gs value={agreed} />
+          </span>
+          <span
+            className={`project-card-margin ${over ? "is-over" : "is-ok"}`}
+          >
             {over ? "excedido " : "margen "}
-            {formatGs(Math.abs(diff))}
+            <Gs value={Math.abs(diff)} />
           </span>
         </div>
       </div>

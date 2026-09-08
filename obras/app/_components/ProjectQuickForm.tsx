@@ -41,7 +41,7 @@ export function ProjectQuickForm({
   return (
     <form action={formAction} className="popup-form">
       <div className="field">
-        <label htmlFor="pr-name">Nombre del proyecto *</label>
+        <label htmlFor="pr-name">Nombre del proyecto</label>
         <input
           id="pr-name"
           name="name"

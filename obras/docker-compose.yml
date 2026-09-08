@@ -10,7 +10,10 @@ services:
       POSTGRES_PASSWORD: obras
       POSTGRES_DB: obras
     ports:
-      - "5433:5432"
+      # Sólo loopback: "5433:5432" a secas publica en 0.0.0.0 y deja el
+      # Postgres de desarrollo (usuario/clave obras/obras) accesible
+      # desde cualquier equipo de la red donde esté la notebook.
+      - "127.0.0.1:5433:5432"
     volumes:
       - obras-db-data:/var/lib/postgresql/data
 

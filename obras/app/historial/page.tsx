@@ -24,12 +24,10 @@ export default async function HistorialPage() {
       </div>
 
       {empty ? (
-        <div className="panel">
-          <p className="empty-state">
-            Todavía no hay proyectos terminados ni archivados. Cuando marques
-            un proyecto como terminado o lo archives, aparece acá.
-          </p>
-        </div>
+        <p className="empty-line">
+          Todavía no hay proyectos terminados ni archivados. Cuando marques un
+          proyecto como terminado o lo archives, aparece acá.
+        </p>
       ) : null}
 
       {finished.length > 0 ? (

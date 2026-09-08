@@ -2,7 +2,6 @@
 
 import { prisma } from "@/lib/prisma";
 import { FIRM_ID } from "@/lib/firm";
-import { formatGsSymbol } from "@/lib/money";
 
 /**
  * Búsqueda global, solo lectura. Cada resultado trae su contexto
@@ -17,8 +16,8 @@ export type SearchResult = {
   title: string;
   /** Contexto: cliente, ruta de segmento, teléfono, etc. */
   context: string | null;
-  /** Monto ya formateado, si aplica. */
-  amount: string | null;
+  /** Monto en guaraníes, si aplica. Lo formatea <Gs> al pintarlo. */
+  amount: number | null;
   href: string;
 };
 
@@ -162,7 +161,7 @@ export async function globalSearch(rawQuery: string): Promise<SearchResult[]> {
       context: `${x.project.name} · ${pathOf(x.segmentId, segs)}${
         showSupplier ? ` · ${x.supplier!.name}` : ""
       }`,
-      amount: formatGsSymbol(Number(x.amount)),
+      amount: Number(x.amount),
       href: `/proyectos/${x.projectId}`,
     });
   }

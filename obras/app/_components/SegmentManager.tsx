@@ -9,6 +9,7 @@ import {
   deleteSegment,
 } from "@/lib/segment-actions";
 import { formatGsSymbol } from "@/lib/money";
+import { Gs } from "./Gs";
 import { Popup, PopupActions } from "./Popup";
 
 type TreeNode = SegmentNode & { children: TreeNode[] };
@@ -175,10 +176,10 @@ function TreeBranch({
               : undefined
           }
         >
-          {formatGsSymbol(node.totalSpend)}
+          <Gs value={node.totalSpend} />
           {hasChildren && node.ownSpend !== node.totalSpend ? (
             <span className="tree-spend-own">
-              propio {formatGsSymbol(node.ownSpend)}
+              propio <Gs value={node.ownSpend} />
             </span>
           ) : null}
         </span>
@@ -261,7 +262,7 @@ function AddSegmentPopup({
     >
       <form action={formAction} className="popup-form">
         <div className="field">
-          <label htmlFor="seg-name">Nombre del segmento *</label>
+          <label htmlFor="seg-name">Nombre del segmento</label>
           <input
             id="seg-name"
             name="name"

@@ -9,6 +9,9 @@
   --border-strong: #cfcfc6;
   --text: #1c1c1a;
   --text-muted: #6d6d65;
+  /* Valores ausentes: más claros que el gris de texto secundario,
+     para que un "—" no pese lo mismo que un dato real. */
+  --faint: #b8b8b0;
   --accent: #2f6f4f;
   --accent-soft: #e6f0ea;
   --accent-fg: #ffffff;
@@ -16,6 +19,19 @@
   --danger-soft: #f8ecec;
   --radius: 7px;
   --sidebar-w: 216px;
+
+  /* Barra lateral: verde muy oscuro y desaturado, derivado del acento.
+     Es la única superficie oscura de la app — le da columna vertebral
+     sin cambiarle el peso al área de trabajo. Sobre ese fondo el verde
+     del acento no rinde, así que lo "encendido" es --accent-soft. */
+  --sidebar-bg: #1f2b24;
+  --sidebar-edge: #16201a;
+  --sidebar-text: #97a69d;
+  --sidebar-text-strong: #eef2ef;
+  /* 5.07:1 contra el fondo — a 10.5px hace falta 4.5:1. */
+  --sidebar-label: #8a9c92;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -58,8 +74,8 @@ a:hover {
 }
 
 .sidebar {
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-edge);
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
@@ -79,6 +95,7 @@ a:hover {
   font-size: 17px;
   letter-spacing: 0.4px;
   padding: 0 8px;
+  color: var(--sidebar-text-strong);
 }
 
 .sidebar-quickadd {
@@ -100,24 +117,69 @@ a:hover {
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: var(--text-muted);
+  color: var(--sidebar-label);
   padding: 0 8px 5px;
 }
 
+/* El ícono toma currentColor: apagado en reposo, encendido al activo,
+   sin reglas propias de color. */
 .sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 6px 10px;
   border-radius: var(--radius);
-  color: var(--text-muted);
+  color: var(--sidebar-text);
   font-weight: 500;
 }
 .sidebar-link:hover {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-strong);
   text-decoration: none;
 }
 .sidebar-link[data-active="true"] {
-  background: var(--accent);
-  color: var(--accent-fg);
+  background: var(--sidebar-active-bg);
+  color: var(--accent-soft);
+  font-weight: 600;
+}
+.sidebar-icon {
+  flex: none;
+}
+
+/* Salir vive al pie, empujado por el auto-margin: está, pero no
+   compite con la navegación. */
+.sidebar-logout {
+  margin-top: auto;
+  padding-top: 8px;
+}
+.sidebar-logout-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Sobre el fondo oscuro el primario se invierte: fondo claro y texto
+   verde. Sigue siendo lo más brillante de la columna, que es lo que
+   corresponde a la acción principal. */
+.sidebar .btn-primary {
+  background: var(--accent-soft);
+  border-color: var(--accent-soft);
+  color: var(--accent);
+}
+.sidebar .btn-primary:hover {
+  background: var(--surface);
+  border-color: var(--surface);
+  filter: none;
+}
+
+/* El anillo de foco verde no se ve contra el verde oscuro. */
+.sidebar .sidebar-link:focus-visible,
+.sidebar .btn:focus-visible {
+  outline-color: var(--accent-soft);
 }
 .sidebar-link[data-disabled="true"] {
   opacity: 0.38;
@@ -134,7 +196,7 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 20px;
+  padding: 10px 24px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   position: sticky;
@@ -167,7 +229,7 @@ a:hover {
 }
 
 .main {
-  padding: 22px 24px 60px;
+  padding: 24px 24px 60px;
   max-width: 1040px;
   width: 100%;
 }
@@ -283,23 +345,36 @@ a:hover {
 
 /* ── Page furniture ──────────────────────────────────────── */
 .breadcrumb {
-  font-size: 12.5px;
+  margin: 0 0 16px;
+}
+/* Volver es un control, no una miga de pan decorativa: mismo cuerpo
+   que un .btn-sm, con la flecha separada del destino. */
+.back-link {
+  gap: 6px;
   color: var(--text-muted);
-  margin: 0 0 10px;
+}
+.back-link:hover {
+  color: var(--text);
+}
+.back-link .back-arrow {
+  font-size: 13px;
+  line-height: 1;
 }
 
 .page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
 .page-title {
-  font-size: 21px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.15;
   margin: 0;
 }
 
@@ -336,40 +411,11 @@ a:hover {
   white-space: pre-wrap;
 }
 
-.data-list {
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, max-content));
-  gap: 10px 32px;
-}
-.data-list > div {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.data-list dt {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-.data-list dd {
-  margin: 0;
-  font-weight: 600;
-}
-.empty-state {
-  padding: 34px 14px;
-  text-align: center;
-  color: var(--text-muted);
-  margin: 0;
-}
-
 .pill {
   display: inline-block;
-  padding: 1px 7px;
+  padding: 2px 9px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
   margin-right: 4px;
 }
@@ -421,6 +467,23 @@ a:hover {
 }
 .btn-danger:hover {
   background: var(--danger-soft);
+}
+/* Piso de accesibilidad: el foco de teclado tiene que verse en todo lo
+   que se puede accionar, no sólo en los campos de texto. */
+.btn:focus-visible,
+.link-btn:focus-visible,
+.icon-btn:focus-visible,
+.chip-x:focus-visible,
+.chip-pick:focus-visible,
+.tag-chip:focus-visible,
+.sidebar-link:focus-visible,
+.search-hit:focus-visible,
+.tree-caret:focus-visible,
+.popup-close:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius);
 }
 .btn-danger-solid {
   background: var(--danger);
@@ -474,12 +537,37 @@ a:hover {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 16px;
-  margin-bottom: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
 }
 .panel-flush {
   padding: 0;
   overflow: hidden;
+}
+
+/* ── #4 Panel: cada cifra en su propia caja ──────────────────
+   Reusa .panel (borde, radio, fondo); sólo le saca el margen de
+   abajo, que acá lo pone el grid. La doble clase gana sobre .panel
+   sin depender del orden del archivo. */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.panel.stat-card {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+}
+
+/* ── #3 Filtro de las listas del directorio ──────────────────
+   Un solo campo, no un constructor de filtros. */
+.list-filter {
+  margin-bottom: 12px;
+  max-width: 320px;
 }
 
 .panel-head {
@@ -487,12 +575,13 @@ a:hover {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .panel-title {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
   margin: 0;
 }
 
@@ -504,7 +593,7 @@ table.grid {
 table.grid th,
 table.grid td {
   text-align: left;
-  padding: 7px 10px;
+  padding: 11px 16px;
   border-bottom: 1px solid var(--border);
 }
 .panel-flush table.grid th:first-child,
@@ -512,9 +601,11 @@ table.grid td {
   padding-left: 16px;
 }
 table.grid th {
-  font-size: 10.5px;
+  font-size: 11px;
+  padding-top: 8px;
+  padding-bottom: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--text-muted);
   font-weight: 600;
   background: var(--surface-alt);
@@ -527,21 +618,33 @@ table.grid tbody tr:hover {
 }
 table.grid .num {
   text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* Un valor ausente pesa menos que uno real. */
+.is-empty {
+  color: var(--faint);
 }
 .seg-path {
   font-variant-numeric: tabular-nums;
 }
 
+/* Columna de barra dentro de una tabla (Panel): ancho fijo para que
+   las filas se comparen entre sí de un vistazo. La barra en sí es la
+   misma .spend-bar de la ficha del proyecto. */
+.bar-col {
+  width: 140px;
+}
+
 /* ── Spend summary ───────────────────────────────────────── */
 .spend-panel {
-  padding: 16px;
+  padding: 20px;
 }
 
 .spend-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .spend-cell {
@@ -550,18 +653,32 @@ table.grid .num {
   gap: 2px;
 }
 
+/* Sin versalitas: ese registro queda para cabeceras de tabla y para
+   los divisores de la barra lateral. */
 .spend-label {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+  font-size: 12.5px;
   color: var(--text-muted);
-  font-weight: 600;
 }
 
 .spend-value {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+/* El ₲ acompaña, no compite: una vez por bloque, chico y gris. */
+.gs-sym {
+  font-size: 0.6em;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-right: 3px;
+  vertical-align: 0.08em;
+}
+.spend-value.is-over .gs-sym,
+.spend-value.is-ok .gs-sym {
+  color: inherit;
+  opacity: 0.55;
 }
 .spend-value.is-over {
   color: var(--danger);
@@ -572,7 +689,7 @@ table.grid .num {
 
 .spend-bar {
   height: 6px;
-  background: var(--bg);
+  background: var(--border);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -683,19 +800,28 @@ table.grid .num {
 }
 
 /* ── Team chips ──────────────────────────────────────────── */
+/* Proveedores y Personal son dos grupos dentro de un mismo panel: la
+   línea + aire entre ellos hace evidente dónde termina uno y empieza
+   el otro, sin necesitar dos paneles separados. */
 .team-block + .team-block {
-  margin-top: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
 }
-.team-label {
+.team-block-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-muted);
-  font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
+}
+/* Es el encabezado de su grupo, no una etiqueta de campo: va con peso,
+   no en gris muted como antes. El botón de acción cuelga siempre del
+   mismo lado, así "a qué corresponde" nunca se ambigua. */
+.team-block-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
 }
 .chips {
   list-style: none;
@@ -705,12 +831,16 @@ table.grid .num {
   margin: 0;
   padding: 0;
 }
+/* Vinculado = verde suave, el mismo lenguaje que ya usan los pills de
+   "Activo". El chip vacío nunca se ve — la lista vacía es el .muted
+   de emptyText, no un chip. */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid transparent;
   border-radius: 999px;
   padding: 3px 5px 3px 11px;
   font-size: 12.5px;
@@ -719,15 +849,49 @@ table.grid .num {
 .chip-x {
   border: none;
   background: none;
-  color: var(--text-muted);
+  color: var(--accent);
+  opacity: 0.6;
   cursor: pointer;
   font-size: 10px;
   padding: 2px 4px;
   border-radius: 999px;
 }
 .chip-x:hover {
+  opacity: 1;
   background: var(--danger-soft);
   color: var(--danger);
+}
+
+/* ── Chips de referencia (sin acción) ───────────────────────
+   Para listas "históricas" que no se accionan día a día — p.ej. las
+   obras de un proveedor en su ficha — más livianas que una tabla:
+   una fila de etiquetas en vez de filas con su propio encabezado. */
+.tag-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+.tag-chip {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.tag-chip:hover {
+  text-decoration: none;
+  filter: brightness(0.96);
+}
+/* Terminado / archivado: mismo tono neutro que .pill.is-finished. */
+.tag-chip.is-past {
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
 }
 
 /* ── Forms ───────────────────────────────────────────────── */
@@ -738,7 +902,7 @@ table.grid .num {
 }
 
 .field label {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
 }
 
@@ -814,14 +978,14 @@ table.grid .num {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 16px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface-alt);
 }
 
 .popup-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
   margin: 0;
 }
 
@@ -856,7 +1020,7 @@ table.grid .num {
 .popup-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 .popup-form + .popup-form {
   margin-top: 14px;
@@ -870,7 +1034,7 @@ table.grid .num {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .popup-sep {
@@ -1002,31 +1166,53 @@ table.grid .num {
   color: var(--accent-fg);
 }
 
+/* El selector de tipo es el "paso previo", no el formulario: va más
+   chico y más gris que los campos que vienen abajo, y entra en una
+   sola fila para que no compita con ellos. */
 .universal-types {
-  margin-bottom: 14px;
-  padding-bottom: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
 }
-/* Gasto (primera opción) siempre destacada aunque no esté elegida. */
-.universal-types .chip-pick:first-child {
-  border-color: var(--accent);
-  font-weight: 700;
+.universal-types .chip-picker {
+  gap: 4px;
 }
+.universal-types .chip-pick {
+  padding: 4px 9px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+.universal-types .chip-pick .chip-pick-label {
+  font-weight: 500;
+}
+/* Gasto (primera opción) siempre legible aunque no esté elegida: es
+   el caso que se usa todos los días. */
+.universal-types .chip-pick:first-child {
+  color: var(--text);
+}
+.universal-types .chip-pick:first-child .chip-pick-label {
+  font-weight: 600;
+}
+.universal-types .chip-pick[data-selected="true"],
 .universal-types .chip-pick:first-child[data-selected="true"] {
+  background: var(--accent);
   border-color: var(--accent);
+  color: var(--accent-fg);
 }
 
 /* ── Project card grid ──────────────────────────────────── */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fill, 320px);
+  justify-content: start;
   gap: 12px;
 }
 
 .project-card {
   display: flex;
   flex-direction: column;
-  padding: 14px;
+  padding: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1072,16 +1258,17 @@ table.grid .num {
   gap: 8px;
 }
 .project-card-spent {
-  font-size: 19px;
+  font-size: 22px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--accent);
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
 .project-card-spent.is-over {
   color: var(--danger);
 }
 .project-card-pct {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
@@ -1091,16 +1278,13 @@ table.grid .num {
 }
 .project-card-figure-label {
   display: block;
-  font-size: 10.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 12.5px;
   color: var(--text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .project-card-bar {
-  height: 4px;
-  background: var(--bg);
+  height: 5px;
+  background: var(--border);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -1112,14 +1296,18 @@ table.grid .num {
 .project-card-bar-fill.is-over {
   background: var(--danger);
 }
+/* "de X" es contexto; el margen es la cifra que decide. */
 .project-card-underbar {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 5px;
-  font-size: 12px;
+  margin-top: 8px;
+  font-size: 12.5px;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
+}
+.project-card-underbar .project-card-margin {
+  font-weight: 600;
 }
 .project-card-underbar .is-ok {
   color: var(--accent);
@@ -1129,23 +1317,22 @@ table.grid .num {
 }
 
 .project-card-meta {
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-muted);
-  margin-top: 10px;
-  padding-top: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 
 /* ── Historial ──────────────────────────────────────────── */
 .history-section + .history-section {
-  margin-top: 22px;
+  margin-top: 32px;
 }
 .section-title {
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  margin: 0 0 12px;
 }
 
 /* ── Linked projects in directory list ──────────────────── */
@@ -1180,7 +1367,7 @@ table.grid .num {
     width: var(--sidebar-w);
     z-index: 55;
     padding: 16px 12px;
-    border-right: 1px solid var(--border);
+    border-right: 1px solid var(--sidebar-edge);
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
   }
   .app-shell[data-collapsed="false"] .sidebar-scrim {
@@ -1190,9 +1377,18 @@ table.grid .num {
     background: rgba(28, 28, 26, 0.35);
     z-index: 54;
   }
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+  .list-filter {
+    max-width: none;
+  }
   .spend-grid {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 12px;
   }
   .main {
     padding: 16px 14px 48px;
@@ -1200,11 +1396,180 @@ table.grid .num {
   .topbar {
     padding: 10px 14px;
   }
+  .panel {
+    padding: 14px;
+  }
   table.grid {
     font-size: 12.5px;
   }
   table.grid th,
   table.grid td {
-    padding: 6px 7px;
+    padding: 9px 10px;
   }
+}
+
+/* ── Ficha de directorio (/clientes|proveedores|personal/[id]) ────
+   Primer tramo del pase visual: escala tipográfica de 6 pasos
+   (11 / 12.5 / 14 / 16 / 20 / 28) y espaciado en 4-8-12-16-24-32.
+   Clases propias a propósito: el resto de las pantallas sigue con
+   .page-title / .panel hasta que el pase las alcance. */
+
+.record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* Versalitas arriba del nombre: dicen qué es esto sin gastar una
+   línea de subtítulo debajo. */
+.record-kicker {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.record-name {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+/* Rol/oficio de Personal: un cargo bajo el nombre, no un dato suelto. */
+.record-role {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.record-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
+  padding-top: 6px;
+}
+
+/* La cifra es el bloque principal, no una cláusula gris en el
+   subtítulo. Mismo patrón que el bloque financiero de la tarjeta. */
+.record-stat {
+  margin-top: 0;
+}
+
+.record-stat-value {
+  font-size: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.record-stat-label {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+/* Teléfono / RUC / Notas en línea, sin panel: son el subtítulo del
+   registro, no una sección. */
+.record-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 0;
+}
+.record-stat + .record-facts {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.record-facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.record-facts dt {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.record-facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+/* Lo ausente pesa menos que lo presente. */
+.record-facts dd.is-empty {
+  color: var(--faint);
+  font-weight: 400;
+}
+.record-notes {
+  margin: 0;
+  white-space: pre-wrap;
+  font-weight: 600;
+}
+
+/* Un vacío se dice en una línea, no en un panel de 130px. */
+.empty-line {
+  margin: 0;
+  font-size: 13px;
+  color: var(--faint);
+}
+
+
+/* ── Pantalla de ingreso ─────────────────────────────────────
+   Sin barra lateral ni buscador: todavía no hay a dónde navegar. */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+}
+
+.login-brand {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.login-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+.login-form .btn {
+  justify-content: center;
 }

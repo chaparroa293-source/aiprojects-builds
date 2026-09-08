@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { globalSearch, type SearchResult } from "@/lib/search-actions";
+import { Gs } from "./Gs";
 
 /**
  * Buscador global del shell. Cada resultado muestra su contexto
@@ -119,8 +120,10 @@ export function GlobalSearch() {
                         <span className="search-hit-context">{r.context}</span>
                       ) : null}
                     </span>
-                    {r.amount ? (
-                      <span className="search-hit-amount">{r.amount}</span>
+                    {r.amount !== null ? (
+                      <span className="search-hit-amount">
+                        <Gs value={r.amount} />
+                      </span>
                     ) : null}
                   </button>
                 ))}

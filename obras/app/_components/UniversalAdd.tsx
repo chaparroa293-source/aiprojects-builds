@@ -105,7 +105,7 @@ export function UniversalAdd() {
       </button>
 
       {open ? (
-        <Popup title={TITLES[kind]} onClose={close} width={480}>
+        <Popup title={TITLES[kind]} onClose={close} width={520}>
           <div className="universal-types">
             <ChipPicker
               ariaLabel="Qué agregás"
@@ -127,6 +127,7 @@ export function UniversalAdd() {
           {kind === "cliente" || kind === "proveedor" || kind === "personal" ? (
             <DirectoryQuickForm
               key={kind}
+              kind={DIR_KIND[kind].kind}
               action={createRecord.bind(null, DIR_KIND[kind].kind)}
               submitLabel="Crear"
               onCancel={close}

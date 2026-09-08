@@ -23,6 +23,10 @@ export type DirectoryRecord = {
   phone: string | null;
   /** RUC — identificador tributario paraguayo. Opcional, sin unicidad. */
   ruc: string | null;
+  /** Rol u oficio ("Albañil", "Electricista"). Sólo tiene sentido para
+   *  Personal — viene siempre null en Clientes/Proveedores, cuyas
+   *  tablas ni tienen la columna. */
+  rol: string | null;
   notes: string | null;
   activeProjectCount: number;
   /** Nombres de los proyectos vinculados (todos, no sólo activos),
@@ -30,9 +34,13 @@ export type DirectoryRecord = {
   linkedProjects: LinkedProjectRef[];
 };
 
+// Los tres modelos comparten forma salvo por `rol`, que sólo existe en
+// employees. Se castea al de forma más amplia (Employee) para poder
+// leer/escribir `rol` sin repetir toda esta capa por kind — el propio
+// parseForm() nunca manda la clave `rol` para clientes/proveedores, así
+// que Prisma nunca intenta escribirla en una tabla que no la tiene.
 function delegate(kind: DirectoryKind) {
-  // Los tres modelos comparten forma; el delegate concreto depende del kind.
-  return prisma[DIRECTORY[kind].model] as typeof prisma.client;
+  return prisma[DIRECTORY[kind].model] as typeof prisma.employee;
 }
 
 /** Cuántos proyectos ACTIVOS (no archivados, no terminados) tiene
@@ -179,7 +187,12 @@ export async function listRecords(kind: DirectoryKind): Promise<DirectoryRecord[
     linkedProjectsByRecord(kind, ids),
   ]);
 
-  return rows.map((r) => {
+  // Alfabético por nombre, con las reglas del español (tildes y ñ):
+  // el orden del motor de base de datos depende de su collation y no
+  // siempre coincide con lo que uno espera leer en una lista.
+  const sorted = [...rows].sort((x, y) => x.name.localeCompare(y.name, "es"));
+
+  return sorted.map((r) => {
     const projects = (linked.get(r.id) ?? []).sort((a, b) =>
       a.name.localeCompare(b.name, "es"),
     );
@@ -188,6 +201,10 @@ export async function listRecords(kind: DirectoryKind): Promise<DirectoryRecord[
       name: r.name,
       phone: r.phone,
       ruc: r.ruc,
+      // r.rol sólo existe de verdad en la fila si kind === "personal";
+      // en clientes/proveedores el cast lo dice presente pero la
+      // columna no existe, así que ?? null cubre ese undefined real.
+      rol: r.rol ?? null,
       notes: r.notes,
       activeProjectCount: counts.get(r.id) ?? 0,
       linkedProjects: projects,
@@ -212,6 +229,7 @@ export async function getRecord(
     name: r.name,
     phone: r.phone,
     ruc: r.ruc,
+    rol: r.rol ?? null,
     notes: r.notes,
     activeProjectCount: counts.get(r.id) ?? 0,
     linkedProjects: (linked.get(r.id) ?? []).sort((a, b) =>
@@ -378,19 +396,18 @@ export async function getDirectoryDetail(
   return { record, projects, expenses, totalSpend };
 }
 
-type ParsedForm =
-  | {
-      ok: true;
-      data: {
-        name: string;
-        phone: string | null;
-        ruc: string | null;
-        notes: string | null;
-      };
-    }
-  | { ok: false; error: string };
+type ParsedFormData = {
+  name: string;
+  phone: string | null;
+  ruc: string | null;
+  // Sólo presente para "personal" — ver comentario en parseForm().
+  rol?: string | null;
+  notes: string | null;
+};
 
-function parseForm(formData: FormData): ParsedForm {
+type ParsedForm = { ok: true; data: ParsedFormData } | { ok: false; error: string };
+
+function parseForm(kind: DirectoryKind, formData: FormData): ParsedForm {
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const ruc = String(formData.get("ruc") ?? "").trim();
@@ -398,15 +415,21 @@ function parseForm(formData: FormData): ParsedForm {
 
   if (!name) return { ok: false, error: "El nombre es obligatorio." };
 
-  return {
-    ok: true,
-    data: {
-      name,
-      phone: phone || null,
-      ruc: ruc || null,
-      notes: notes || null,
-    },
+  const data: ParsedFormData = {
+    name,
+    phone: phone || null,
+    ruc: ruc || null,
+    notes: notes || null,
   };
+  // La clave `rol` sólo se agrega para Personal: Clientes y Proveedores
+  // no tienen esa columna, y Prisma rechaza en tiempo de ejecución
+  // cualquier campo que la tabla no reconozca.
+  if (kind === "personal") {
+    const rol = String(formData.get("rol") ?? "").trim();
+    data.rol = rol || null;
+  }
+
+  return { ok: true, data };
 }
 
 export type FormState = { error: string | null };
@@ -418,7 +441,7 @@ export async function createRecord(
 ): Promise<FormState> {
   if (!isDirectoryKind(kind)) return { error: "Directorio inválido." };
 
-  const parsed = parseForm(formData);
+  const parsed = parseForm(kind, formData);
   if (!parsed.ok) return { error: parsed.error };
 
   await delegate(kind).create({
@@ -438,7 +461,7 @@ export async function updateRecord(
 ): Promise<FormState> {
   if (!isDirectoryKind(kind)) return { error: "Directorio inválido." };
 
-  const parsed = parseForm(formData);
+  const parsed = parseForm(kind, formData);
   if (!parsed.ok) return { error: parsed.error };
 
   const existing = await delegate(kind).findFirst({
