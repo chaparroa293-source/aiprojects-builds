@@ -1,7 +1,8 @@
 // Obras — esquema Prisma
 // Slice 1: directorio (Clientes / Proveedores / Personal).
 // Slice 2: Proyectos + árbol de Segmentos (sin dinero todavía).
-// Gastos, Pedidos, Notas y Adjuntos llegan en slices posteriores.
+// Slice 3: Gastos (captura rápida). Un gasto = un proyecto + un segmento.
+// Pedidos, Notas y Adjuntos llegan en slices posteriores.
 //
 // Regla transversal: firm_id en TODAS las tablas desde el inicio
 // (una sola firma en v1, sin UI para cambiar de firma todavía).
@@ -42,6 +43,8 @@ model Supplier {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
+  expenses  Expense[]
+
   @@index([firmId])
   @@map("suppliers")
 }
@@ -76,12 +79,17 @@ model Project {
   agreedTotalPrice BigInt        @map("agreed_total_price")
   // "Terminado" es un toggle manual, nunca calculado por gasto ni fecha.
   status           ProjectStatus @default(ACTIVE)
+  // Archivar: saca al proyecto de la lista activa sin destruir sus
+  // registros. Es la salida para proyectos con historial financiero
+  // que ya no se pueden borrar en duro (ver deleteProject).
+  archivedAt       DateTime?     @map("archived_at")
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
   client         Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
   segments       Segment[]
   priceRevisions PriceRevision[]
+  expenses       Expense[]
 
   @@index([firmId])
   @@index([clientId])
@@ -116,13 +124,47 @@ model Segment {
 
   project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   // Restrict: no se puede borrar un segmento que todavía tiene hijos
-  // (regla de bloqueo de la spec, decisión #2). La app además valida
-  // esto antes para dar un mensaje claro en español.
+  // o gastos (regla de bloqueo de la spec, decisión #2). La app además
+  // valida esto antes para dar un mensaje claro en español.
   parent   Segment?  @relation("SegmentTree", fields: [parentId], references: [id], onDelete: Restrict)
   children Segment[] @relation("SegmentTree")
+  expenses Expense[]
 
   @@index([firmId])
   @@index([projectId])
   @@index([parentId])
   @@map("segments")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  firmId      String   @map("firm_id")
+  // Un gasto pertenece siempre a EXACTAMENTE un proyecto y un segmento
+  // (sin gastos "sin segmentar", sin gastos repartidos entre proyectos).
+  projectId   String   @map("project_id")
+  segmentId   String   @map("segment_id")
+  // Proveedor opcional.
+  supplierId  String?  @map("supplier_id")
+  // Monto en guaraníes, entero.
+  amount      BigInt
+  description String?
+  // Fecha en que se hizo el gasto (puede diferir de cuándo se cargó).
+  spentAt     DateTime @default(now()) @map("spent_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Restrict a propósito (NO Cascade): un gasto es un registro
+  // financiero. Borrar el proyecto o el segmento que lo contiene se
+  // bloquea mientras exista el gasto — nunca se pierde en silencio.
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  segment  Segment  @relation(fields: [segmentId], references: [id], onDelete: Restrict)
+  // Borrar un proveedor del directorio NO borra el gasto: solo se
+  // desvincula (spec, sección 1).
+  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([firmId])
+  @@index([projectId])
+  @@index([segmentId])
+  @@index([supplierId])
+  @@map("expenses")
 }

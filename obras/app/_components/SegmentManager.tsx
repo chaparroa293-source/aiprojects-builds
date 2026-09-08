@@ -174,6 +174,11 @@ function SegmentRow({
             {node.childCount} subsegmento{node.childCount === 1 ? "" : "s"}
           </span>
         ) : null}
+        {node.expenseCount > 0 ? (
+          <span className="segment-badge">
+            {node.expenseCount} gasto{node.expenseCount === 1 ? "" : "s"}
+          </span>
+        ) : null}
         <span className="segment-actions">
           <button
             type="button"

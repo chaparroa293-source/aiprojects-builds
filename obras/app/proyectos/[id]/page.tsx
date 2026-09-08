@@ -1,16 +1,24 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  archiveProject,
   deleteProject,
   getProjectDetail,
   reviseProjectPrice,
   setProjectStatus,
+  unarchiveProject,
 } from "@/lib/project-actions";
 import { listSegments } from "@/lib/segment-actions";
+import {
+  getQuickAddData,
+  listProjectExpenses,
+} from "@/lib/expense-actions";
 import { PriceRevisionPanel } from "@/app/_components/PriceRevisionPanel";
 import { SegmentManager } from "@/app/_components/SegmentManager";
 import { StatusToggle } from "@/app/_components/StatusToggle";
-import { DeleteButton } from "@/app/_components/DeleteButton";
+import { ProjectDangerZone } from "@/app/_components/ProjectDangerZone";
+import { QuickAddExpense } from "@/app/_components/QuickAddExpense";
+import { ProjectExpensesList } from "@/app/_components/ProjectExpensesList";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +28,11 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [project, segments] = await Promise.all([
+  const [project, segments, expenses, quickAddData] = await Promise.all([
     getProjectDetail(id),
     listSegments(id),
+    listProjectExpenses(id),
+    getQuickAddData(),
   ]);
   if (!project) notFound();
 
@@ -32,7 +42,6 @@ export default async function ProjectDetailPage({
     id,
     project.status === "FINISHED" ? "ACTIVE" : "FINISHED",
   );
-  const remove = deleteProject.bind(null, id);
 
   return (
     <>
@@ -52,9 +61,21 @@ export default async function ProjectDetailPage({
             >
               {project.status === "FINISHED" ? "Terminado" : "Activo"}
             </span>
+            {project.archived ? (
+              <>
+                {" "}
+                <span className="status-pill is-finished">Archivado</span>
+              </>
+            ) : null}
           </p>
         </div>
         <div className="header-actions">
+          <QuickAddExpense
+            data={quickAddData}
+            lockedProjectId={id}
+            triggerLabel="+ Registrar gasto"
+            triggerClassName="btn btn-primary"
+          />
           <Link href={`/proyectos/${id}/editar`} className="btn">
             Editar datos
           </Link>
@@ -70,18 +91,16 @@ export default async function ProjectDetailPage({
 
       <SegmentManager projectId={id} segments={segments} />
 
-      <section className="panel danger-zone">
-        <h2 className="panel-title">Eliminar proyecto</h2>
-        <p className="muted" style={{ fontSize: 13 }}>
-          Se eliminan también sus segmentos y el historial de precio. No se
-          puede deshacer.
-        </p>
-        <DeleteButton
-          action={remove}
-          label="Eliminar proyecto"
-          confirmMessage={`¿Eliminar el proyecto "${project.name}" y todo su contenido? Esta acción no se puede deshacer.`}
-        />
-      </section>
+      <ProjectExpensesList projectId={id} expenses={expenses} />
+
+      <ProjectDangerZone
+        projectName={project.name}
+        archived={project.archived}
+        expenseCount={project.expenseCount}
+        deleteAction={deleteProject.bind(null, id)}
+        archiveAction={archiveProject.bind(null, id)}
+        unarchiveAction={unarchiveProject.bind(null, id)}
+      />
     </>
   );
 }

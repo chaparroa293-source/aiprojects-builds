@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import type { ProjectStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { FIRM_ID } from "@/lib/firm";
-import { parseGs } from "@/lib/money";
+import { formatGsSymbol, parseGs } from "@/lib/money";
 
 export type FormState = { error: string | null };
 
@@ -14,8 +14,10 @@ export type ProjectListItem = {
   name: string;
   clientName: string | null;
   status: ProjectStatus;
+  archived: boolean;
   agreedTotalPrice: number;
   segmentCount: number;
+  expenseCount: number;
 };
 
 export type PriceRevisionItem = {
@@ -32,8 +34,11 @@ export type ProjectDetail = {
   clientId: string | null;
   clientName: string | null;
   status: ProjectStatus;
+  archived: boolean;
   agreedTotalPrice: number;
   priceRevisions: PriceRevisionItem[];
+  expenseCount: number;
+  expenseTotal: number;
 };
 
 export type ClientOption = { id: string; name: string };
@@ -47,13 +52,18 @@ export async function listClientOptions(): Promise<ClientOption[]> {
   return rows;
 }
 
-export async function listProjects(): Promise<ProjectListItem[]> {
+export async function listProjects({
+  archived = false,
+}: { archived?: boolean } = {}): Promise<ProjectListItem[]> {
   const rows = await prisma.project.findMany({
-    where: { firmId: FIRM_ID },
+    where: {
+      firmId: FIRM_ID,
+      archivedAt: archived ? { not: null } : null,
+    },
     orderBy: [{ status: "asc" }, { name: "asc" }],
     include: {
       client: { select: { name: true } },
-      _count: { select: { segments: true } },
+      _count: { select: { segments: true, expenses: true } },
     },
   });
   return rows.map((p) => ({
@@ -61,9 +71,17 @@ export async function listProjects(): Promise<ProjectListItem[]> {
     name: p.name,
     clientName: p.client?.name ?? null,
     status: p.status,
+    archived: p.archivedAt !== null,
     agreedTotalPrice: Number(p.agreedTotalPrice),
     segmentCount: p._count.segments,
+    expenseCount: p._count.expenses,
   }));
+}
+
+export async function countArchivedProjects(): Promise<number> {
+  return prisma.project.count({
+    where: { firmId: FIRM_ID, archivedAt: { not: null } },
+  });
 }
 
 export async function getProjectDetail(id: string): Promise<ProjectDetail | null> {
@@ -72,15 +90,21 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
     include: {
       client: { select: { name: true } },
       priceRevisions: { orderBy: { createdAt: "desc" } },
+      _count: { select: { expenses: true } },
     },
   });
   if (!p) return null;
+  const totals = await prisma.expense.aggregate({
+    where: { firmId: FIRM_ID, projectId: id },
+    _sum: { amount: true },
+  });
   return {
     id: p.id,
     name: p.name,
     clientId: p.clientId,
     clientName: p.client?.name ?? null,
     status: p.status,
+    archived: p.archivedAt !== null,
     agreedTotalPrice: Number(p.agreedTotalPrice),
     priceRevisions: p.priceRevisions.map((r) => ({
       id: r.id,
@@ -89,6 +113,8 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
       reason: r.reason,
       createdAt: r.createdAt.toISOString(),
     })),
+    expenseCount: p._count.expenses,
+    expenseTotal: Number(totals._sum.amount ?? 0n),
   };
 }
 
@@ -224,14 +250,55 @@ export async function setProjectStatus(
   revalidatePath(`/proyectos/${id}`);
 }
 
-export async function deleteProject(id: string): Promise<void> {
-  // Slice 2: un proyecto todavía no tiene gastos. Al borrarlo se
-  // eliminan en cascada sus segmentos y su historial de precio.
-  // Cuando existan Gastos (Slice 3+), esto debe bloquearse si el
-  // proyecto tiene gasto registrado — no se pierde historial financiero.
-  await prisma.project.deleteMany({
+export async function archiveProject(id: string): Promise<void> {
+  await prisma.project.updateMany({
     where: { id, firmId: FIRM_ID },
+    data: { archivedAt: new Date() },
   });
+  revalidatePath("/proyectos");
+  revalidatePath(`/proyectos/${id}`);
+}
+
+export async function unarchiveProject(id: string): Promise<void> {
+  await prisma.project.updateMany({
+    where: { id, firmId: FIRM_ID },
+    data: { archivedAt: null },
+  });
+  revalidatePath("/proyectos");
+  revalidatePath(`/proyectos/${id}`);
+}
+
+export async function deleteProject(
+  id: string,
+  _prev: FormState,
+  _formData: FormData,
+): Promise<FormState> {
+  const project = await prisma.project.findFirst({
+    where: { id, firmId: FIRM_ID },
+    select: { _count: { select: { expenses: true } } },
+  });
+  if (!project) return { error: "El proyecto no existe." };
+
+  // Bloqueo: un proyecto con gastos registrados NO se puede borrar en
+  // duro — se perdería historial financiero real. La salida es
+  // "Archivar" (lo saca de la lista activa sin destruir nada).
+  // Los segmentos y el historial de precio de un proyecto SIN gastos
+  // sí se eliminan en cascada: no son registros de dinero gastado.
+  if (project._count.expenses > 0) {
+    const n = project._count.expenses;
+    const totals = await prisma.expense.aggregate({
+      where: { firmId: FIRM_ID, projectId: id },
+      _sum: { amount: true },
+    });
+    const total = formatGsSymbol(Number(totals._sum.amount ?? 0n));
+    return {
+      error: `No se puede eliminar: el proyecto tiene ${n} gasto${
+        n === 1 ? "" : "s"
+      } registrado${n === 1 ? "" : "s"} por ${total}. Archivá el proyecto en su lugar.`,
+    };
+  }
+
+  await prisma.project.deleteMany({ where: { id, firmId: FIRM_ID } });
   revalidatePath("/proyectos");
   redirect("/proyectos");
 }

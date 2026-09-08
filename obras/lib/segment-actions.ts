@@ -11,19 +11,21 @@ export type SegmentNode = {
   parentId: string | null;
   name: string;
   childCount: number;
+  expenseCount: number;
 };
 
 export async function listSegments(projectId: string): Promise<SegmentNode[]> {
   const rows = await prisma.segment.findMany({
     where: { firmId: FIRM_ID, projectId },
     orderBy: { name: "asc" },
-    include: { _count: { select: { children: true } } },
+    include: { _count: { select: { children: true, expenses: true } } },
   });
   return rows.map((s) => ({
     id: s.id,
     parentId: s.parentId,
     name: s.name,
     childCount: s._count.children,
+    expenseCount: s._count.expenses,
   }));
 }
 
@@ -156,21 +158,27 @@ export async function deleteSegment(
     where: { id: segmentId, firmId: FIRM_ID },
     select: {
       projectId: true,
-      _count: { select: { children: true } },
+      _count: { select: { children: true, expenses: true } },
     },
   });
   if (!seg) return { error: "El segmento no existe." };
 
   // Regla de bloqueo (spec, decisión #2): no se puede eliminar un
-  // segmento que todavía tiene subsegmentos. Hay que mover o eliminar
-  // lo que cuelga de él primero. Nunca se pierde un registro silenciosamente.
-  // (Cuando existan Gastos, este bloqueo también aplica si tiene gastos.)
-  if (seg._count.children > 0) {
-    const n = seg._count.children;
+  // segmento que todavía tiene subsegmentos y/o gastos. Hay que mover
+  // o eliminar lo que cuelga de él primero. Nunca se pierde un
+  // registro (y menos uno de dinero) en silencio.
+  const kids = seg._count.children;
+  const spend = seg._count.expenses;
+  if (kids > 0 || spend > 0) {
+    const parts: string[] = [];
+    if (kids > 0) parts.push(`${kids} subsegmento${kids === 1 ? "" : "s"}`);
+    if (spend > 0) parts.push(`${spend} gasto${spend === 1 ? "" : "s"}`);
     return {
-      error: `No se puede eliminar: el segmento tiene ${n} subsegmento${
-        n === 1 ? "" : "s"
-      }. Movelos o eliminalos primero.`,
+      error: `No se puede eliminar: el segmento tiene ${parts.join(
+        " y ",
+      )}. Mové o eliminá ${
+        spend > 0 ? "esos registros" : "los subsegmentos"
+      } primero.`,
     };
   }
 

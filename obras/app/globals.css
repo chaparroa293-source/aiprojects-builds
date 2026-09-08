@@ -436,3 +436,102 @@ table.directory tbody tr:hover {
 .danger-zone {
   border-color: #e6cfce;
 }
+
+.danger-sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+
+/* Quick-add expense (Slice 3) --------------------------------- */
+.sidebar-quickadd {
+  padding: 0 4px;
+}
+
+.quick-add-trigger {
+  width: 100%;
+  justify-content: center;
+}
+
+.quick-add-saved {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: center;
+}
+
+.header-actions .quick-add-saved {
+  align-self: center;
+}
+
+.form-ok {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 30, 28, 0.4);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 16px;
+  z-index: 50;
+  overflow-y: auto;
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 22px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.modal-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-form select,
+.modal-form input[type="text"],
+.modal-form input[type="date"] {
+  font: inherit;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+}
+
+.modal-more {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.modal-more summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.modal-more .field {
+  margin-bottom: 12px;
+}

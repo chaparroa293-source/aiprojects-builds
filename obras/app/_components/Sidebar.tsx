@@ -1,15 +1,18 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DIRECTORY_KINDS, DIRECTORY } from "@/lib/directory-config";
 
-export function Sidebar() {
+export function Sidebar({ quickAdd }: { quickAdd?: ReactNode }) {
   const pathname = usePathname();
 
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">Obras</div>
+
+      {quickAdd ? <div className="sidebar-quickadd">{quickAdd}</div> : null}
 
       <nav className="sidebar-nav">
         <div className="sidebar-section-label">Directorio</div>
