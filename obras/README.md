@@ -1,17 +1,27 @@
 # Obras
 
 Gestión de obras para un estudio de ingeniería/arquitectura (Paraguay, guaraníes).
-Ver `context.md`, `spec.md` y `plan.md` para el detalle.
+
+## Documentación
+
+- **[TECHNICAL_SPEC.md](TECHNICAL_SPEC.md)** — la verdad de dominio vigente:
+  qué objetos existen, qué garantiza el sistema, cómo se captura y se
+  recupera cada cosa, qué se deriva. Documento de cambio lento (ver su
+  propio encabezado para cuándo actualizarlo).
+- **[specs/](specs/)** — documentación por slice (`context.md` / `spec.md`
+  / `plan.md`). `specs/v1/` tiene los documentos de planificación
+  originales del producto.
 
 ## Estado
 
-**Slice 1 — App shell + directorio.** Solo Clientes / Proveedores / Personal
-(alta, edición, listado). Sin Proyectos, Segmentos ni Gastos todavía.
+Implementado: directorio (Clientes / Proveedores / Personal), Proyectos,
+árbol de Segmentos, captura de Gastos, revisiones de precio, historial de
+proyectos, búsqueda global. Pendiente: Pedidos, Notas, Adjuntos.
 
 ## Stack
 
-Next.js (App Router) + Prisma + Postgres. Una sola firma en v1 (`firm_id`
-en todas las tablas). Sin autenticación.
+Next.js (App Router) + Prisma + Postgres. Una sola firma (`firm_id` en
+todas las tablas). Sin autenticación.
 
 ## Desarrollo local
 
