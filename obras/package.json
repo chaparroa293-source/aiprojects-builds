@@ -14,7 +14,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "auth:hash": "tsx scripts/generar-acceso.ts"
+    "auth:create-user": "tsx scripts/crear-usuario.ts"
   },
   "engines": {
     "node": ">=20.9.0"

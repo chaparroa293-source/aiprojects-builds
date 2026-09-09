@@ -19,6 +19,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Cuentas nombradas (OBRAS-012): reemplazan el portón de contraseña
+// compartida. Sin roles ni permisos — las dos cuentas ven y hacen
+// exactamente lo mismo, es un solo negocio, no multi-tenant. Sirven
+// para (a) el login y (b) dejar registrado quién cargó qué
+// (`createdByUserId` en Project/Expense). Alta sólo por CLI
+// (scripts/crear-usuario.ts) — no hay alta pública ni gestión in-app.
+model User {
+  id           String   @id @default(cuid())
+  firmId       String   @map("firm_id")
+  // Nombre para mostrar ("registrado por Agus"), no el de login.
+  name         String
+  // Lo que se escribe para entrar. No necesariamente un email.
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  createdProjects Project[] @relation("ProjectCreatedBy")
+  createdExpenses Expense[] @relation("ExpenseCreatedBy")
+
+  @@index([firmId])
+  @@map("users")
+}
+
 model Client {
   id        String   @id @default(cuid())
   firmId    String   @map("firm_id")
@@ -95,10 +118,16 @@ model Project {
   // registros. Es la salida para proyectos con historial financiero
   // que ya no se pueden borrar en duro (ver deleteProject).
   archivedAt       DateTime?     @map("archived_at")
+  // Quién lo creó (OBRAS-012) — trazabilidad, no permisos: las dos
+  // cuentas pueden ver y editar cualquier proyecto igual. Null en todo
+  // lo creado antes de que existieran las cuentas; eso queda así, no
+  // se completa con retroactividad.
+  createdByUserId  String?       @map("created_by_user_id")
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
   client         Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  createdByUser  User?             @relation("ProjectCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   segments       Segment[]
   priceRevisions PriceRevision[]
   expenses       Expense[]
@@ -107,6 +136,7 @@ model Project {
 
   @@index([firmId])
   @@index([clientId])
+  @@index([createdByUserId])
   @@map("projects")
 }
 
@@ -189,34 +219,41 @@ model Segment {
 }
 
 model Expense {
-  id          String   @id @default(cuid())
-  firmId      String   @map("firm_id")
+  id              String   @id @default(cuid())
+  firmId          String   @map("firm_id")
   // Un gasto pertenece siempre a EXACTAMENTE un proyecto y un segmento
   // (sin gastos "sin segmentar", sin gastos repartidos entre proyectos).
-  projectId   String   @map("project_id")
-  segmentId   String   @map("segment_id")
+  projectId       String   @map("project_id")
+  segmentId       String   @map("segment_id")
   // Proveedor opcional.
-  supplierId  String?  @map("supplier_id")
+  supplierId      String?  @map("supplier_id")
   // Monto en guaraníes, entero.
-  amount      BigInt
-  description String?
+  amount          BigInt
+  description     String?
   // Fecha en que se hizo el gasto (puede diferir de cuándo se cargó).
-  spentAt     DateTime @default(now()) @map("spent_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  spentAt         DateTime @default(now()) @map("spent_at")
+  // Quién lo cargó (OBRAS-012) — trazabilidad, no permisos. Null en
+  // gastos anteriores a las cuentas; no se completa con retroactividad.
+  // No se toca en una edición: registra quién lo cargó, no quién lo
+  // tocó por última vez.
+  createdByUserId String?  @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Restrict a propósito (NO Cascade): un gasto es un registro
   // financiero. Borrar el proyecto o el segmento que lo contiene se
   // bloquea mientras exista el gasto — nunca se pierde en silencio.
-  project  Project   @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  segment  Segment   @relation(fields: [segmentId], references: [id], onDelete: Restrict)
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  segment       Segment   @relation(fields: [segmentId], references: [id], onDelete: Restrict)
   // Borrar un proveedor del directorio NO borra el gasto: solo se
   // desvincula (spec, sección 1).
-  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  supplier      Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  createdByUser User?     @relation("ExpenseCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([firmId])
   @@index([projectId])
   @@index([segmentId])
   @@index([supplierId])
+  @@index([createdByUserId])
   @@map("expenses")
 }

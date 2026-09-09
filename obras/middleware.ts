@@ -14,11 +14,9 @@ export async function middleware(request: NextRequest) {
   const secret = process.env.SESSION_SECRET;
   const token = request.cookies.get(SESSION_COOKIE)?.value;
 
-  const allowed = secret
-    ? await verifySessionToken(secret, token)
-    : false;
+  const session = secret ? await verifySessionToken(secret, token) : null;
 
-  if (allowed) return NextResponse.next();
+  if (session) return NextResponse.next();
 
   const url = request.nextUrl.clone();
   url.pathname = "/ingresar";

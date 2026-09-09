@@ -13,13 +13,23 @@ export function LoginForm({ desde }: { desde: string }) {
     <form action={formAction} className="login-form">
       <input type="hidden" name="desde" value={desde} />
       <div className="field">
+        <label htmlFor="login-username">Usuario</label>
+        <input
+          id="login-username"
+          name="username"
+          type="text"
+          autoComplete="username"
+          autoFocus
+          required
+        />
+      </div>
+      <div className="field">
         <label htmlFor="login-password">Contraseña</label>
         <input
           id="login-password"
           name="password"
           type="password"
           autoComplete="current-password"
-          autoFocus
           required
         />
       </div>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { FIRM_ID } from "@/lib/firm";
+import { getCurrentUserId } from "@/lib/current-user";
 import { parseGs } from "@/lib/money";
 
 export type ExpenseFormState = { error: string | null; savedAt?: number };
@@ -31,6 +32,9 @@ export type ExpenseListItem = {
   spentAt: string;
   segmentLabel: string;
   supplierName: string | null;
+  /** Quién lo cargó (OBRAS-012). Null en gastos de antes de las
+   *  cuentas — eso es correcto, no un dato faltante. */
+  creatorName: string | null;
 };
 
 export type ExpenseDetail = {
@@ -125,7 +129,10 @@ export async function listProjectExpenses(
     prisma.expense.findMany({
       where: { firmId: FIRM_ID, projectId },
       orderBy: [{ spentAt: "desc" }, { createdAt: "desc" }],
-      include: { supplier: { select: { name: true } } },
+      include: {
+        supplier: { select: { name: true } },
+        createdByUser: { select: { name: true } },
+      },
     }),
     prisma.segment.findMany({
       where: { firmId: FIRM_ID, projectId },
@@ -140,6 +147,7 @@ export async function listProjectExpenses(
     spentAt: e.spentAt.toISOString(),
     segmentLabel: segmentPath(e.segmentId, flat),
     supplierName: e.supplier?.name ?? null,
+    creatorName: e.createdByUser?.name ?? null,
   }));
 }
 
@@ -281,8 +289,14 @@ export async function createExpense(
   const parsed = await parseExpenseForm(formData);
   if (!parsed.ok) return { error: parsed.error };
 
+  // Trazabilidad, no permisos: null si por lo que sea no hay sesión
+  // legible (no debería pasar detrás del middleware, pero un gasto no
+  // se bloquea por esto — sencillamente queda sin autor, igual que uno
+  // histórico de antes de que existieran las cuentas).
+  const createdByUserId = await getCurrentUserId();
+
   await prisma.expense.create({
-    data: { firmId: FIRM_ID, ...parsed.data },
+    data: { firmId: FIRM_ID, createdByUserId, ...parsed.data },
   });
 
   revalidatePath("/proyectos");

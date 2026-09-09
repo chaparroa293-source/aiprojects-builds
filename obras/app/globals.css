@@ -628,6 +628,22 @@ table.grid .num {
   font-variant-numeric: tabular-nums;
 }
 
+/* Quién cargó el gasto (OBRAS-012): una segunda línea chica bajo la
+   fecha, no una columna nueva — es procedencia, no un dato que se
+   compare fila a fila. */
+.expense-creator {
+  display: block;
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+/* Quién creó el proyecto: un dato más en la misma subline gris, no un
+   elemento nuevo. */
+.creator-note {
+  font-size: 12px;
+  color: var(--faint);
+}
+
 /* Columna de barra dentro de una tabla (Panel): ancho fijo para que
    las filas se comparen entre sí de un vistazo. La barra en sí es la
    misma .spend-bar de la ficha del proyecto. */

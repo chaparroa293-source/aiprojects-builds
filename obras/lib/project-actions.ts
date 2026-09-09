@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { ProjectStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { FIRM_ID } from "@/lib/firm";
+import { getCurrentUserId } from "@/lib/current-user";
 import { formatGsSymbol, parseGs } from "@/lib/money";
 
 export type FormState = { error: string | null };
@@ -43,6 +44,9 @@ export type ProjectDetail = {
   priceRevisions: PriceRevisionItem[];
   expenseCount: number;
   expenseTotal: number;
+  /** Quién lo creó (OBRAS-012). Null en proyectos de antes de las
+   *  cuentas — eso es correcto, no un dato faltante. */
+  createdByName: string | null;
 };
 
 export type ClientOption = { id: string; name: string };
@@ -104,6 +108,7 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
     where: { id, firmId: FIRM_ID },
     include: {
       client: { select: { name: true } },
+      createdByUser: { select: { name: true } },
       priceRevisions: { orderBy: { createdAt: "desc" } },
       _count: { select: { expenses: true } },
     },
@@ -130,6 +135,7 @@ export async function getProjectDetail(id: string): Promise<ProjectDetail | null
     })),
     expenseCount: p._count.expenses,
     expenseTotal: Number(totals._sum.amount ?? 0n),
+    createdByName: p.createdByUser?.name ?? null,
   };
 }
 
@@ -159,6 +165,7 @@ export async function createProject(
   }
 
   const clientId = await resolveClientId(clientRaw);
+  const createdByUserId = await getCurrentUserId();
 
   const project = await prisma.project.create({
     data: {
@@ -166,6 +173,7 @@ export async function createProject(
       name,
       clientId,
       agreedTotalPrice: BigInt(price),
+      createdByUserId,
       // El precio inicial no cuenta como "revisión": el historial
       // registra los cambios posteriores.
     },

@@ -1,12 +1,14 @@
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 
 /**
- * Verificación de la contraseña compartida.
+ * Hash y verificación de contraseña, usado por `User.passwordHash`
+ * (OBRAS-012) — antes fue el de la contraseña única compartida, hoy es
+ * el de cada cuenta nombrada; el formato y las garantías no cambiaron.
  *
- * Guarda un hash scrypt, no la contraseña: si alguien ve las variables
- * de entorno (panel de Vercel, un log, una captura), no se lleva la
- * contraseña. Usa `node:crypto`, así que este módulo NO lo puede
- * importar el middleware (Edge) — sólo la acción de ingreso.
+ * Guarda un hash scrypt, no la contraseña: si alguien ve la base o un
+ * volcado, no se lleva ninguna contraseña. Usa `node:crypto`, así que
+ * este módulo NO lo puede importar el middleware (Edge) — sólo la
+ * acción de ingreso y el script de alta de cuentas, que corren en Node.
  *
  * Formato guardado: `scrypt:<saltHex>:<hashHex>`.
  *
@@ -29,7 +31,7 @@ function derive(password: string, salt: Buffer): Promise<Buffer> {
   });
 }
 
-/** Genera el valor que va en AUTH_PASSWORD_HASH. */
+/** Genera el valor que se guarda en `User.passwordHash`. */
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
   const key = await derive(password, salt);

@@ -3,9 +3,10 @@ import { LoginForm } from "@/app/_components/LoginForm";
 export const dynamic = "force-dynamic";
 
 /**
- * Portón de entrada. Una sola contraseña compartida — no hay usuarios,
- * ni roles, ni recuperación: es la herramienta de una familia, no un
- * producto multiusuario.
+ * Portón de entrada. Cuentas nombradas (OBRAS-012) — sin roles, sin
+ * recuperación de contraseña, sin alta pública: las únicas dos cuentas
+ * las crea quien despliega, por CLI (scripts/crear-usuario.ts). Es la
+ * herramienta de una familia, no un producto multiusuario.
  */
 export default async function IngresarPage({
   searchParams,
@@ -20,7 +21,8 @@ export default async function IngresarPage({
         <p className="login-brand">Obras</p>
         <h1 className="login-title">Entrar</h1>
         <p className="login-hint">
-          Esta herramienta es privada. Escribí la contraseña para continuar.
+          Esta herramienta es privada. Ingresá con tu usuario y
+          contraseña para continuar.
         </p>
         <LoginForm desde={desde ?? ""} />
       </div>

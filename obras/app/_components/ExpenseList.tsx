@@ -67,7 +67,14 @@ export function ExpenseList({
             <tbody>
               {visible.map((e) => (
                 <tr key={e.id}>
-                  <td className="muted nowrap">{fmtDate(e.spentAt)}</td>
+                  <td className="muted nowrap">
+                    {fmtDate(e.spentAt)}
+                    {e.creatorName ? (
+                      <span className="expense-creator">
+                        {e.creatorName}
+                      </span>
+                    ) : null}
+                  </td>
                   <td>
                     <span className="seg-path">{e.segmentLabel}</span>
                     {e.description ? (

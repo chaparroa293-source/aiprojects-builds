@@ -71,6 +71,11 @@ export default async function ProjectDetailPage({
             {project.archived ? (
               <span className="pill is-finished">Archivado</span>
             ) : null}
+            {project.createdByName ? (
+              <span className="creator-note">
+                Creado por {project.createdByName}
+              </span>
+            ) : null}
           </p>
         </div>
         <div className="header-actions">

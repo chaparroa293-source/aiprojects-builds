@@ -39,19 +39,38 @@ document almost certainly does not change.
 
 ## System-wide truths
 
-- **One firm.** There is no `Firm` table and no user model. Every
-  table carries a `firm_id` column; every read is filtered by it and
-  every write stamps it, using a single constant id
-  (`DEFAULT_FIRM_ID`, default `"firm_default"`). The column exists so
-  multi-firm is a data change, not a schema change, later.
-- **One shared gate, no identities.** The whole app sits behind a
-  single shared password (`AUTH_PASSWORD_HASH`, a scrypt hash;
-  `SESSION_SECRET` signs the session). Access is all-or-nothing: there
-  are no accounts, roles, permissions, or per-actor attribution, and
-  nothing is recorded about *who* performed an action. The session is
-  a signed, expiring cookie — **no `Session` or `User` table exists**,
-  so this adds no domain object. Missing or malformed configuration
-  denies access rather than granting it.
+- **One firm.** There is no `Firm` table. Every table carries a
+  `firm_id` column; every read is filtered by it and every write
+  stamps it, using a single constant id (`DEFAULT_FIRM_ID`, default
+  `"firm_default"`). The column exists so multi-firm is a data change,
+  not a schema change, later. `User` (below) carries `firm_id` too,
+  for the same reason — it is not itself a multi-tenant concept.
+- **Named accounts, still one flat access level.** Login is
+  username + password against the `User` table (OBRAS-012 — replaced
+  an earlier single shared-password gate; the shared secret and its
+  env var are gone, no fallback path to it). Every account has
+  identical, full access to the same shared business data: **no
+  roles, no permissions tiers, no per-user visibility restrictions**,
+  and none are planned — this is one business, not multi-tenant, and
+  a "who can see what" system would be solving a problem that doesn't
+  exist here. What *does* exist is provenance: `Project` and `Expense`
+  carry a nullable `createdByUserId`, stamped automatically from the
+  session at creation and never altered afterward (including on
+  edit — it records who logged it, not who last touched it). It is
+  display-only, surfaced quietly ("Creado por …"); nothing reads it to
+  decide access. Rows created before accounts existed keep it `null`
+  — that is correct, not backfilled.
+  Accounts are created only by an admin-run CLI script
+  (`scripts/crear-usuario.ts` / `npm run auth:create-user`) directly
+  against whichever database it's pointed at — there is no public
+  sign-up page and no in-app user management. There is no password
+  reset, no email verification, no roles UI: two people, low stakes,
+  deliberately out of scope.
+  The session is still a signed, expiring cookie (`SESSION_SECRET`
+  signs it, now over a payload that includes `userId`) — **no
+  `Session` table exists**; the cookie itself is the only session
+  state. Missing or malformed configuration denies access rather than
+  granting it.
 - **Money is guaraníes, integer, no decimals.** Amounts persist as
   Postgres `BIGINT` and cross into the app as JavaScript `number`
   (guaraní magnitudes are assumed to stay within safe-integer range).
@@ -77,10 +96,47 @@ document almost certainly does not change.
 
 ## Domain objects
 
-Nine persisted objects exist today: **Client, Supplier, Employee,
+Ten persisted objects exist today: **User, Client, Supplier, Employee,
 Project, Segment, Expense, PriceRevision, ProjectSupplier,
 ProjectEmployee**. `Request`, `Note`, and `Attachment` appear in
 `specs/v1/` but are **not built** and are not part of current truth.
+
+### User  (`users`)
+
+- **Meaning.** A named account that can log in (OBRAS-012). Not a
+  tenant, not a permission tier — an identity, kept only to gate
+  access and to record provenance on the two objects where "who
+  registered this" is useful.
+- **Fields.** `id` (cuid, pk); `firmId`; `name` **required** (display
+  name — what shows in "Creado por …", not the login credential);
+  `username` **required, globally unique** (what's typed to log in;
+  free text, not necessarily an email); `passwordHash` **required**
+  (scrypt, see `lib/password.ts`); `createdAt`. No `updatedAt` — a
+  password change would be a re-run of the creation script against the
+  same username, not an edit path this model exposes.
+  No role/tier field exists, deliberately — every account has
+  identical access, and adding a column for it before it does anything
+  would be spec fiction.
+- **Relationships / cardinality.** `User 0..1 — 0..N Project` and
+  `User 0..1 — 0..N Expense`, both via nullable `createdByUserId`
+  (`onDelete: SetNull` — deleting a user, which has no UI path today,
+  would orphan its rows to `null`, not delete them).
+- **Invariants.** `username` unique. No two accounts may share one.
+- **Operations.** Create only, and only by CLI
+  (`npm run auth:create-user -- "Nombre" "usuario" "contraseña"`)
+  against whichever `DATABASE_URL` the script is run with. **No
+  update, no delete, no in-app management, no public sign-up, no
+  password reset** — all deliberately out of scope at this scale.
+- **Capture.** The CLI script, run once per account after a
+  deployment. Not reachable from the app itself in any form.
+- **Retrieval.** Never listed or browsed directly. Surfaced only
+  indirectly: the logged-in account's `name` isn't displayed as an
+  identity, but `createdByUserId → name` is quietly shown on a
+  Project's header and an Expense's row, when set.
+- **History.** None.
+- **Derivations.** None.
+- **Persistence.** One row per account; effectively immutable once
+  created (no update path exists).
 
 ### Client  (`clients`)
 
@@ -173,9 +229,16 @@ ProjectEmployee**. `Request`, `Note`, and `Attachment` appear in
   - `status` enum `ProjectStatus` = `ACTIVE | FINISHED`, default
     `ACTIVE`.
   - `archivedAt` **nullable** DateTime.
+  - `createdByUserId` **nullable** FK → User (`onDelete: SetNull`,
+    OBRAS-012). Stamped from the session at creation; never changed
+    afterward. `null` on every project created before accounts
+    existed — that's historical fact, not a gap.
   - `createdAt`, `updatedAt`.
 - **Relationships / cardinality.**
   - `Client 0..1 — 0..N Project`.
+  - `User 0..1 — 0..N Project` (provenance only — not a permissions
+    relation; both accounts can read/edit any project regardless of
+    who created it).
   - `Project 1 — 0..N Segment` (`onDelete: Cascade`).
   - `Project 1 — 0..N Expense` (`onDelete: Restrict`).
   - `Project 1 — 0..N PriceRevision` (`onDelete: Cascade`).
@@ -207,7 +270,8 @@ ProjectEmployee**. `Request`, `Note`, and `Attachment` appear in
     separately all archived projects.
   - `/proyectos/[id]` — the project workspace: spend-vs-price summary,
     the segment tree, recent expense activity, linked suppliers &
-    personnel, and the archive/delete controls.
+    personnel, and the archive/delete controls. Header quietly shows
+    "Creado por …" when `createdByUserId` is set.
   - Global search matches `name`.
 - **History.** `PriceRevision` records agreed-price changes. Status and
   archive transitions are **not** logged — only the current state and
@@ -282,9 +346,14 @@ ProjectEmployee**. `Request`, `Note`, and `Attachment` appear in
   - `description` nullable.
   - `spentAt` DateTime, default now — the date the money was spent, may
     differ from `createdAt` (when it was logged).
+  - `createdByUserId` **nullable** FK → User (`onDelete: SetNull`,
+    OBRAS-012). Stamped from the session at creation; **not** touched
+    by an edit — it records who logged the expense, not who last
+    changed it. `null` on every expense from before accounts existed.
   - `createdAt`, `updatedAt`.
 - **Relationships / cardinality.** `Project 1 — 0..N Expense`;
-  `Segment 1 — 0..N Expense`; `Supplier 0..1 — 0..N Expense`.
+  `Segment 1 — 0..N Expense`; `Supplier 0..1 — 0..N Expense`;
+  `User 0..1 — 0..N Expense` (provenance only, same as on Project).
 - **Invariants.**
   - **One expense = exactly one project + exactly one segment.** There
     is no "unsegmented" expense and no expense split across projects; a
@@ -314,7 +383,8 @@ ProjectEmployee**. `Request`, `Note`, and `Attachment` appear in
   - On the project page — "Actividad reciente": the project's expenses,
     newest first by `spentAt` then `createdAt`, showing date, segment
     path, supplier, amount; each row opens an edit popup; expandable to
-    the full list.
+    the full list. A quiet second line under the date names who logged
+    it, when `createdByUserId` is set.
   - On a supplier's detail page — every expense naming that supplier,
     across all projects.
   - Global search — matches an expense by `description`, by supplier
@@ -409,7 +479,7 @@ ProjectEmployee**. `Request`, `Note`, and `Attachment` appear in
 
 | Route | View |
 |---|---|
-| `/ingresar` | shared-password gate; the only route reachable without a session |
+| `/ingresar` | username + password login; the only route reachable without a session |
 | `/` | redirect → `/proyectos` |
 | `/clientes`, `/proveedores`, `/personal` | directory list for that kind (name, phone, linked project names) |
 | `/clientes/[id]`, `/proveedores/[id]`, `/personal/[id]` | full-screen directory record detail (contact data incl. RUC, notes, linked projects; for suppliers also per-project spend and an expense list) |
@@ -428,9 +498,13 @@ context.
 
 - **Request, Note, Attachment** — described in `specs/v1/spec.md`, not
   built. No tables, routes, or operations exist.
-- **Firm / User** — single implicit firm; no user records, no roles,
-  no permissions, no per-actor attribution. The password gate above is
-  a deployment boundary, not an identity model.
+- **Firm** — single implicit firm; still no `Firm` table, no multi-tenant
+  data scoping, no UI to switch firms.
+- **Roles, permissions, user management UI, password reset, public
+  sign-up** — `User` (above) exists only for login and provenance.
+  Every account has identical access; there is no tier system, no
+  in-app way to add/edit/remove accounts (CLI only), and no account-
+  recovery flow.
 - **Multi-currency** — guaraníes only.
 - **A layer between Project and Segment** (sprints / phases /
   milestones) — considered and explicitly parked; Project → Segment is
