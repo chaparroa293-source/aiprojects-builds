@@ -13,6 +13,6 @@ Planned product areas:
 - Directory
 - Capture
 
-Implemented now: Clients, client-owned Sessions, and client-owned Appointments. Sessions and Appointments are available only in Client Detail; no global Sessions or Agenda page exists.
+Implemented now: Clients, client-owned Sessions, client-owned Appointments, and client-owned Payments. Sessions, Appointments, and Payments are available only in Client Detail; no global Sessions, Agenda, or Payments page exists.
 
-Client Agenda is the implemented scheduling foundation. Global Agenda, Appointment → Session conversion, Payments, Follow-ups, History, Reporting, Practice Analytics, Directory, and Capture remain unimplemented.
+Client Agenda is the implemented scheduling foundation. Global Agenda, Appointment → Session conversion, Global Payments, Follow-ups, History, Reporting, Practice Analytics, Directory, and Capture remain unimplemented.

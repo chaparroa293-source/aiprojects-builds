@@ -43,3 +43,10 @@
 - Explicitly exposed only `practice_management.appointments` through the existing Data API configuration; automatic exposure remains off. The development `anon` role has only `SELECT`, `INSERT`, and `UPDATE` on appointments; an unexpected DELETE privilege was revoked and confirmed absent.
 - Verified fake client/appointment empty Agenda, create, direct ownership and NULL-duration read, edit, reload persistence, UI validation, no client-reassignment control, and database rejection of an unsupported status. Scoped fake records were removed and confirmed absent.
 - Global Agenda, Appointment → Session conversion, Payments, authentication, and production RLS remain unimplemented.
+
+## 2026-09-09 — Slice 4: Client Payments
+
+- Applied the scoped `practice_management.payments` migration with a direct `client_id` foreign key, `numeric(14,0)` positive-amount constraint, client-payment index, and the scoped `updated_at` trigger.
+- Explicitly exposed only `practice_management.payments` through the existing Data API configuration; automatic exposure remains off. The development `anon` role has only `SELECT`, `INSERT`, and `UPDATE`; it has no `DELETE` grant.
+- Verified a fake client’s empty Pagos state, required/non-positive validation, create, blank notes as `NULL`, direct ownership, PYG formatting and total, edit, and reload persistence. The two fake payments and matching fake client were removed and confirmed absent.
+- Global Payments, authentication, and production RLS remain unimplemented.

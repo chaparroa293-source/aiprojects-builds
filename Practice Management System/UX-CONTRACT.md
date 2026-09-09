@@ -1,4 +1,4 @@
-# UX Contract — Client Directory and Session History
+# UX Contract — Client Directory, Sessions, Agenda, and Payments
 
 ## Product context
 
@@ -11,12 +11,12 @@
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 | --- | --- | --- | --- | --- |
-| Form | `ClientForm`, `SessionForm`, and `AppointmentForm` in `src/App.jsx` | This contract | Create and edit share validation and submit behavior. | Browser validation states. |
+| Form | `ClientForm`, `SessionForm`, `AppointmentForm`, and `PaymentForm` in `src/App.jsx` | This contract | Create and edit share validation and submit behavior. | Browser validation states. |
 | Select/Listbox | Native `<select>` | This contract | Native only; accepted for small client/session status sets. | Keyboard and native popup. |
 | Date | Native date/time inputs | This contract | Native only; accepted for the required session date/time fields. | Browser input and validation states. |
 | Scrollbar | `src/styles.css` | `DESIGN.md` | Global baseline only. | Computed stylesheet inspection. |
 | Toast | Inline `role=status` / `role=alert` in `App` | This contract | Success and error messages only. | Browser live-region inspection. |
-| CRUD | `client-api.js` + `App` | `docs/WORKFLOWS.md` | Pessimistic client/session/appointment create/edit; refresh reads from Supabase. | Full flow after Supabase setup. |
+| CRUD | `client-api.js` + `App` | `docs/WORKFLOWS.md` | Pessimistic client/session/appointment/payment create/edit; refresh reads from Supabase. | Full flow after Supabase setup. |
 | Search/filter/sort | `App` directory controls | This contract | Local, transient view controls until a server-side contract exists. | Browser interaction check. |
 
 ## Flow ledger
@@ -30,7 +30,8 @@
 | Demo create/edit | Save button disabled while applying | Visible during this browser session only | Message clearly states it was not persisted. |
 | Session create | Save button disabled with `Guardando…` | History remains in the owning Client Detail and updates | Preserve form values and show inline error. |
 | Session edit | Save button disabled with `Guardando…` | History remains in the owning Client Detail and updates | Preserve form values and show inline error. |
+| Payment create/edit | Save button disabled with `Guardando…` | Pagos remains in the owning Client Detail and updates the client-only total | Preserve form values and show inline error. |
 
 ## Validation and resilience
 
-Forms use `noValidate`, attach field errors to their inputs, and prevent duplicate saves. Client forms require name and surname and validate an entered email. Session forms inherit the current client and require date and start time; duration and notes are intentionally optional, while the native status control limits entry to the three permitted states. Appointment forms also inherit the current client, require date and start time, allow blank duration/notes, and limit state to `programada` or `cancelada`; they provide no reassignment control. Search, filter, and sort are local/transient because no server-side list contract exists. No autosave, offline queue, deletion, authentication, or authorization behavior exists in this slice. When Supabase is absent, visibly labeled in-memory demo records permit UI-only review; they are not a persistence substitute.
+Forms use `noValidate`, attach field errors to their inputs, and prevent duplicate saves. Client forms require name and surname and validate an entered email. Session forms inherit the current client and require date and start time; duration and notes are intentionally optional, while the native status control limits entry to the three permitted states. Appointment forms also inherit the current client, require date and start time, allow blank duration/notes, and limit state to `programada` or `cancelada`; they provide no reassignment control. Payment forms inherit the current client, require a date and a positive whole-guaraní amount, allow blank notes as `NULL`, and provide no reassignment control. Search, filter, and sort are local/transient because no server-side list contract exists. No autosave, offline queue, deletion, authentication, or authorization behavior exists in this slice. When Supabase is absent, visibly labeled in-memory demo records permit UI-only review; they are not a persistence substitute.

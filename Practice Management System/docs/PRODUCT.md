@@ -19,4 +19,4 @@ Slice 1 implements the Client Directory. Slice 2 adds Session history within a c
 
 ## Not yet implemented
 
-Global scheduling/Agenda, Appointment → Session conversion, payments, follow-ups, reporting, authentication, deployment, and AI/natural-language capture are not implemented. Client-scoped Appointment Agenda is implemented.
+Global scheduling/Agenda, Appointment → Session conversion, Global Payments, follow-ups, reporting, authentication, deployment, and AI/natural-language capture are not implemented. Client-scoped Appointment Agenda and Client-scoped Payments are implemented.

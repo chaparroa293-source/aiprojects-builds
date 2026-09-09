@@ -6,4 +6,4 @@ No configuration mechanism is selected or implemented. Add only configuration su
 
 ## Initial locale policy
 
-The initial interface locale is Spanish for Paraguay (`es-PY`). Future monetary values must be stored as numeric values and displayed as Paraguayan guaraní: currency code `PYG`, symbol `₲`, period thousands separator, and no decimal places by default (for example, `150000` → `₲ 150.000`). Payments are not part of Slice 1.
+The interface locale is Spanish for Paraguay (`es-PY`). Payment amounts are stored as unformatted whole numeric values and displayed as Paraguayan guaraní: currency code `PYG`, symbol `₲`, period thousands separator, and no decimal places (for example, `150000` → `₲ 150.000`).

@@ -24,7 +24,7 @@ PWA: Planned, not implemented
 | --- | --- | --- | --- |
 | Client | Entity | Built | — |
 | Session | Event | Built | Client |
-| Payment | Transaction | Planned | TBD |
+| Payment | Transaction | Built + Verified | Client |
 | FollowUp | Event | Planned | TBD |
 | Note | Record | Planned | TBD |
 | Appointment | Event | Built + Verified | Client |
@@ -79,6 +79,22 @@ created_at: timestamptz, generated on create
 updated_at: timestamptz, generated on create and refreshed on update
 ```
 
+### Payment
+
+```text
+TYPE: Transaction
+MEANING: recorded money received from a Client
+PERSISTENCE: practice_management.payments
+id: uuid, generated primary key
+client_id: uuid, required foreign key
+fecha: date, required
+monto: numeric, required; > 0; stored as an unformatted numeric PYG value
+notas: text, optional
+created_at: timestamptz, generated on create
+updated_at: timestamptz, generated on create and refreshed on update
+NOT: invoice, amount owed, outstanding balance, debt, session price, or earned revenue
+```
+
 ## RELATIONSHIPS
 
 ```text
@@ -97,6 +113,15 @@ CARDINALITY: 1:N
 FK: appointments.client_id → clients.id
 REQUIRED: yes
 REASSIGNMENT: unsupported
+
+REL-003
+FROM: Client
+TO: Payment
+CARDINALITY: 1:N
+FK: payments.client_id → clients.id
+REQUIRED: yes
+REASSIGNMENT: unsupported
+NO LINK: Session or Appointment
 ```
 
 ## RULES / INVARIANTS
@@ -118,6 +143,10 @@ RULE-013: Appointment.fecha and Appointment.hora_inicio are required.
 RULE-014: Appointment.duracion_minutos may be null; when supplied it is a positive integer.
 RULE-015: Appointment.estado is programada or cancelada.
 RULE-016: Appointment is planned work, not a Session; Appointment-to-Session conversion is not implemented.
+RULE-017: Payment.client_id must reference an existing Client and cannot be reassigned in the UI.
+RULE-018: Payment.fecha and Payment.monto are required.
+RULE-019: Payment.monto is a numeric PYG value greater than zero; formatted currency strings are not stored.
+RULE-020: Total received is the sum of payments.monto scoped to the current Client; it is not a balance, debt, invoice, or earned revenue.
 ```
 
 ## OPERATIONS
@@ -127,6 +156,7 @@ RULE-016: Appointment is planned work, not a Session; Appointment-to-Session con
 | Client | Implemented | Directory/detail | Implemented | Unsupported | Name, email, phone | estado | Recent or name | — |
 | Session | Implemented | Client history/detail-edit | Implemented | Unsupported | Unsupported | Unsupported | fecha desc, hora_inicio desc | Implemented |
 | Appointment | Implemented | Client Agenda/detail-edit | Implemented | Unsupported | Unsupported | Unsupported | fecha asc, hora_inicio asc | Implemented |
+| Payment | Implemented | Client Pagos/detail-edit | Implemented | Unsupported | Unsupported | Unsupported | fecha desc | Implemented |
 
 ## CAPTURE CONTRACTS
 
@@ -202,6 +232,17 @@ SORT/ORDER: fecha ascending, then hora_inicio ascending
 NAVIGATION: remains inside owning Client Detail; no global Agenda view
 ```
 
+### Client Payments and Payment Create/Detail/Edit
+
+```text
+PRIMARY DATA: Payments scoped to current Client
+DISPLAY: fecha, monto formatted as PYG, notas only when useful, Total received roll-up
+ACTIONS: create Payment, open Payment, update Payment
+FILTER: none
+SORT/ORDER: fecha descending
+NAVIGATION: remains inside owning Client Detail; no global Payments view
+```
+
 ## RETRIEVAL
 
 ```text
@@ -223,6 +264,12 @@ PRIMARY: Client Detail → Agenda
 SCOPE: appointment.client_id = current client.id
 ORDER: fecha ascending, hora_inicio ascending
 GLOBAL VIEW: no
+
+PAYMENT
+PRIMARY: Client Detail → Pagos
+SCOPE: payment.client_id = current client.id
+ORDER: fecha descending
+GLOBAL VIEW: no
 ```
 
 ## DERIVATIONS / ANALYTICS
@@ -234,7 +281,7 @@ Derived values must not claim information unsupported by stored data.
 Money received ≠ outstanding balance.
 ```
 
-No payment fields or analytics implementation exist.
+The only implemented money derivation is Total received, scoped to the current Client. No balance, debt, invoice, earned-revenue, or analytics implementation exists.
 
 ## PERSISTENCE CONTRACT
 
@@ -254,6 +301,7 @@ DEVELOPMENT BROWSER ROLE: anon
 clients: SELECT / INSERT / UPDATE; NO DELETE
 sessions: SELECT / INSERT / UPDATE; NO DELETE
 appointments: SELECT / INSERT / UPDATE; NO DELETE
+payments: SELECT / INSERT / UPDATE; NO DELETE
 AUTH: not implemented
 OWNERSHIP: not implemented
 RLS: deferred; not production-ready
@@ -297,12 +345,15 @@ CHECKPOINT: 4bc2a6aa5b7ec76916175c881508b754adc60ddf
 
 SLICE 3A — Appointment Foundation + Client Agenda — COMPLETE
 Client → Agenda → Create Appointment → Persist → Edit → Persist → Reload
+
+SLICE 4 — Client Payments — COMPLETE
+Client → Pagos → Create Payment → Persist → Edit → Persist → Reload
 ```
 
 ## DEFERRED
 
-Planned: authentication; user/workspace ownership; RLS production hardening; payments; follow-ups; notes; Quick Capture UI; analytics implementation; Cloudflare deployment; PWA; production deployment.
+Planned: authentication; user/workspace ownership; RLS production hardening; follow-ups; notes; Quick Capture UI; analytics implementation; Cloudflare deployment; PWA; production deployment.
 
-Deferred: Global Agenda; Appointment → Session conversion; payments.
+Deferred: Global Agenda; Appointment → Session conversion; Global Payments.
 
 `Built` means implemented in code and schema; `verified` means evidence is recorded in the build log; `planned` and `deferred` are not implementation status.

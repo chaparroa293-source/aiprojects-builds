@@ -3,6 +3,7 @@ import { supabase } from './supabase.js'
 const clientFields = 'id, nombre, apellido, telefono, email, notas, estado, created_at, updated_at'
 const sessionFields = 'id, client_id, fecha, hora_inicio, duracion_minutos, estado, notas, created_at, updated_at'
 const appointmentFields = 'id, client_id, fecha, hora_inicio, duracion_minutos, estado, notas, created_at, updated_at'
+const paymentFields = 'id, client_id, fecha, monto, notas, created_at, updated_at'
 
 function databaseError(error) {
   return new Error(error.message || 'No se pudo completar la operación.')
@@ -95,6 +96,28 @@ export async function createAppointment(appointment) {
 export async function updateAppointment(id, appointment) {
   const { data, error } = await supabase.schema('practice_management')
     .from('appointments').update(appointment).eq('id', id).select(appointmentFields).single()
+  if (error) throw databaseError(error)
+  return data
+}
+
+export async function listClientPayments(clientId) {
+  const { data, error } = await supabase.schema('practice_management')
+    .from('payments').select(paymentFields).eq('client_id', clientId)
+    .order('fecha', { ascending: false })
+  if (error) throw databaseError(error)
+  return data
+}
+
+export async function createPayment(payment) {
+  const { data, error } = await supabase.schema('practice_management')
+    .from('payments').insert(payment).select(paymentFields).single()
+  if (error) throw databaseError(error)
+  return data
+}
+
+export async function updatePayment(id, payment) {
+  const { data, error } = await supabase.schema('practice_management')
+    .from('payments').update(payment).eq('id', id).select(paymentFields).single()
   if (error) throw databaseError(error)
   return data
 }
