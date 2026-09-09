@@ -20,8 +20,9 @@ proyectos, búsqueda global. Pendiente: Pedidos, Notas, Adjuntos.
 
 ## Stack
 
-Next.js (App Router) + Prisma + Postgres. Una sola firma (`firm_id` en
-todas las tablas). Sin autenticación.
+Next.js (App Router) + Prisma + Postgres (Neon en producción). Una sola
+firma (`firm_id` en todas las tablas). Cuentas nombradas sin roles
+(ver TECHNICAL_SPEC.md, sección User) — no hay alta pública.
 
 ## Desarrollo local
 
@@ -48,6 +49,23 @@ npm run dev                   # http://localhost:3000 (o 3001 si 3000 está ocup
 ```
 
 Otra opción: apuntar `DATABASE_URL` a cualquier Postgres propio.
+
+## Despliegue
+
+Vercel + Neon Postgres. El build corre `prisma generate && prisma
+migrate deploy && next build` (ver OBRAS-013 — el `generate` explícito
+existe porque un `node_modules` cacheado por Vercel puede saltearse el
+postinstall que normalmente lo dispara).
+
+**Preview aislado de Production (OBRAS-013).** Cada Preview deployment
+usa su propia rama de Neon (copy-on-write del esquema y los datos de
+Production al momento de crearse), no la base de Production. Se
+configura una sola vez desde el tab Storage del proyecto en Vercel →
+la base de Neon → "Connect" → en la configuración de despliegues,
+"Create a database branch for deployment" = Preview. El `DATABASE_URL`
+de esa rama se inyecta por deployment (no aparece como valor fijo en
+Environment Variables) y la rama se borra sola cuando Vercel borra el
+deployment de Preview correspondiente.
 
 ## Scripts
 
