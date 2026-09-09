@@ -50,3 +50,10 @@
 - Explicitly exposed only `practice_management.payments` through the existing Data API configuration; automatic exposure remains off. The development `anon` role has only `SELECT`, `INSERT`, and `UPDATE`; it has no `DELETE` grant.
 - Verified a fake client’s empty Pagos state, required/non-positive validation, create, blank notes as `NULL`, direct ownership, PYG formatting and total, edit, and reload persistence. The two fake payments and matching fake client were removed and confirmed absent.
 - Global Payments, authentication, and production RLS remain unimplemented.
+
+## 2026-09-09 — PMS-S04: Session ↔ Payment allocation
+
+- Confirmed the live `practice_management.sessions.payment_id` nullable column, `ON DELETE SET NULL` foreign key, same-client trigger, and reverse-read index.
+- Added client-scoped Session link/change/unlink capture. A Session reads its nullable `payment_id`; a Payment reads linked Sessions through that foreign key and derives its linked-session count without changing payment amount or Total received.
+- Verified with disposable records: NULL compatibility, link and reload read, one Payment linked to two Sessions, change, unlink, cross-client rejection, `ON DELETE SET NULL`, and reverse counts. All disposable clients, sessions, and payments were removed; a final database count returned zero.
+- No allocation amounts, invoices, balances, debt, reconciliation, global Sessions, or global Payments were introduced.

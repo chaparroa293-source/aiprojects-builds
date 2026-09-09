@@ -59,6 +59,7 @@ hora_inicio: time, required
 duracion_minutos: integer, optional/nullable; when supplied, > 0
 estado: text, required; programada | completada | cancelada
 notas: text, optional
+payment_id: uuid, optional/nullable foreign key to Payment
 created_at: timestamptz, generated on create
 updated_at: timestamptz, generated on create and refreshed on update
 ```
@@ -121,7 +122,17 @@ CARDINALITY: 1:N
 FK: payments.client_id → clients.id
 REQUIRED: yes
 REASSIGNMENT: unsupported
-NO LINK: Session or Appointment
+NO LINK: Appointment
+
+REL-004
+FROM: Payment
+TO: Session
+CARDINALITY: 1:N from Payment; 0..1 from Session
+FK: sessions.payment_id → payments.id
+REQUIRED: no
+INVARIANT: Session and linked Payment must have the same client_id
+DELETE: deleting Payment sets sessions.payment_id to NULL; Session remains
+SOURCE OF TRUTH: sessions.payment_id; reverse Payment → Sessions is derived
 ```
 
 ## RULES / INVARIANTS
@@ -147,6 +158,9 @@ RULE-017: Payment.client_id must reference an existing Client and cannot be reas
 RULE-018: Payment.fecha and Payment.monto are required.
 RULE-019: Payment.monto is a numeric PYG value greater than zero; formatted currency strings are not stored.
 RULE-020: Total received is the sum of payments.monto scoped to the current Client; it is not a balance, debt, invoice, or earned revenue.
+RULE-021: Session.payment_id may be NULL or reference one Payment of the same Client; it does not store an allocation amount.
+RULE-022: A Payment may be referenced by many Sessions; linked-session count is derived from sessions.payment_id and is not persisted.
+RULE-023: A payment association means only that the Session references a recorded Payment. It is not a balance, partial payment, split payment, invoice, reconciliation, or a substitute for Session.estado.
 ```
 
 ## OPERATIONS
@@ -177,7 +191,7 @@ PERSISTENCE_TARGET: practice_management.clients
 ```text
 CONTEXT: Client Detail → Sesiones
 USER_REQUIRED: fecha, hora_inicio, estado
-USER_OPTIONAL: duracion_minutos, notas
+USER_OPTIONAL: duracion_minutos, notas, payment_id (same-client recorded Payment only)
 DEFAULTS: form estado=programada (database has no estado default)
 SYSTEM_GENERATED: id, created_at, updated_at
 OUTPUT: Session
@@ -204,9 +218,9 @@ NAVIGATION: selected client → Client Detail
 
 ```text
 PRIMARY DATA: selected Client
-RELATED DATA: Session history through Sesiones tab
-DISPLAY: phone, email, estado, notes; Datos/Sesiones tabs
-ACTIONS: edit Client; open Sesiones; add/open Session
+RELATED DATA: Session history, payments, and payment-linked sessions through client tabs
+DISPLAY: phone, email, estado, notes; Datos/Agenda/Sesiones/Pagos tabs
+ACTIONS: edit Client; open agenda, sessions, and payments; add/open related records
 NAVIGATION: Client Directory ↔ selected Client context
 ```
 
@@ -214,8 +228,8 @@ NAVIGATION: Client Directory ↔ selected Client context
 
 ```text
 PRIMARY DATA: Sessions scoped to current Client
-DISPLAY: fecha, hora_inicio, estado, duration when present; full form on edit
-ACTIONS: create Session, open Session, update Session
+DISPLAY: fecha, hora_inicio, estado, duration when present; secondary recorded-payment association when linked; full form on edit
+ACTIONS: create Session, open Session, update Session; link, change, or unlink a same-client Payment
 FILTER: none
 SORT/ORDER: fecha descending, then hora_inicio descending
 NAVIGATION: remains inside owning Client Detail; no global Sessions view
@@ -236,7 +250,7 @@ NAVIGATION: remains inside owning Client Detail; no global Agenda view
 
 ```text
 PRIMARY DATA: Payments scoped to current Client
-DISPLAY: fecha, monto formatted as PYG, notas only when useful, Total received roll-up
+DISPLAY: fecha, monto formatted as PYG, notes only when useful, Total received roll-up, and derived linked-session count/detail
 ACTIONS: create Payment, open Payment, update Payment
 FILTER: none
 SORT/ORDER: fecha descending
@@ -258,6 +272,7 @@ PRIMARY: Client Detail → Sesiones
 SCOPE: session.client_id = current client.id
 ORDER: fecha descending, hora_inicio descending
 GLOBAL VIEW: no
+PAYMENT ASSOCIATION: session.payment_id is nullable and returned with the Session; eligible choices are Payments scoped to the current Client
 
 APPOINTMENT
 PRIMARY: Client Detail → Agenda
@@ -270,6 +285,7 @@ PRIMARY: Client Detail → Pagos
 SCOPE: payment.client_id = current client.id
 ORDER: fecha descending
 GLOBAL VIEW: no
+LINKED SESSIONS: reverse read through sessions.payment_id; count and detail are derived, never stored on Payment
 ```
 
 ## DERIVATIONS / ANALYTICS
