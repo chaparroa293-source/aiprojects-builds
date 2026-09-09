@@ -23,3 +23,7 @@ The current client is inherited by the appointment form and cannot be reassigned
 Open client → open Pagos → see that client's empty state → add payment → persist → open stored payment → edit → save → reload → persisted values remain.
 
 The current client is inherited by the payment form and cannot be reassigned. `fecha` and a positive whole-guaraní `monto` are required; `notas` is optional and blank notes persist as `NULL`. Total received is the sum of payments for the current Client only; it is not a balance, debt, invoice, or earned revenue. Fake development verification covered empty state, create, direct ownership/NULL checks, edit, reload, validation, and the total. The fake records were removed afterward. Global Payments is not implemented.
+
+## Quick Capture — Slice 5
+
+The persistent shell action opens a compact Session or Payment form. It requires an explicit Client selection (or visibly uses the current Client), then calls the same normal Session or Payment create operation. Quick Session records start with `payment_id = NULL`; Quick Payment records remain ordinary payments and update the existing Client Detail total. There is no Quick Capture table, history, or duplicate storage; Client Detail → Sesiones and Pagos remain the only retrieval paths.

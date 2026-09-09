@@ -198,7 +198,18 @@ OUTPUT: Session
 PERSISTENCE_TARGET: practice_management.sessions
 ```
 
-Standard Capture and future Quick Capture MUST write the same domain objects. Quick Capture is not implemented.
+Standard Capture and Quick Capture write the same Session and Payment domain objects. Quick Capture is an alternative input path, not a persistent object or history.
+
+### Quick Capture
+
+```text
+CONTEXT: persistent application-shell action
+TYPES: Session | Payment
+CLIENT: required and explicitly selected; the active Client is visibly preselected when available
+SESSION: writes a normal Session with payment_id=NULL; contextual Session edit can link a Payment later
+PAYMENT: writes a normal Payment; blank notes persist as NULL
+RETRIEVAL: Client Detail → Sesiones or Pagos remains authoritative
+```
 
 ## VIEW CONTRACTS
 
@@ -220,7 +231,7 @@ NAVIGATION: selected client → Client Detail
 PRIMARY DATA: selected Client
 RELATED DATA: Session history, payments, and payment-linked sessions through client tabs
 DISPLAY: phone, email, estado, notes; Datos/Agenda/Sesiones/Pagos tabs
-ACTIONS: edit Client; open agenda, sessions, and payments; add/open related records
+ACTIONS: edit Client; open agenda, sessions, and payments; add/open related records; open Quick Capture
 NAVIGATION: Client Directory ↔ selected Client context
 ```
 

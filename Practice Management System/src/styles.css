@@ -15,6 +15,7 @@ textarea,.resize-none{resize:none}
 .sidebar-nav{margin-top:50px}
 .nav-item{display:flex;gap:11px;padding:11px 12px;border-radius:6px;color:#edf4ec;font-weight:700;text-decoration:none}
 .nav-item.active{background:#35644e}
+.sidebar-quick{width:100%;margin-top:12px;border:1px solid #91ae99;border-radius:6px;padding:10px 12px;color:#f5f1e6;background:transparent;text-align:left;font-weight:800}.sidebar-quick:hover{background:#35644e}
 .nav-note{margin:18px 12px 0;color:#b8c7b7;font-size:.77rem;line-height:1.5}
 .account{display:flex;gap:10px;align-items:center;border-top:1px solid #4b715e;padding:17px 5px 0}
 .account-avatar{width:31px;height:31px;border-radius:50%;background:#d6dfcb;color:#264a36;font-size:.78rem;font-weight:800}
@@ -65,6 +66,7 @@ td{padding:14px 20px;border-bottom:1px solid #eee9df;color:#5e6b61;font-size:.88
 .empty-state,.list-placeholder{padding:48px 24px;color:var(--color-muted);text-align:center}
 .empty-state p{margin-bottom:6px;color:#385843;font-weight:800}
 .detail-panel{padding:26px;min-height:350px}
+.quick-capture{max-width:650px;border:1px solid var(--color-border);border-radius:8px;padding:26px;background:var(--color-surface)}.quick-types{display:flex;gap:8px;margin:0 0 20px}.quick-type{min-height:38px;border:1px solid #aeb9a8;border-radius:5px;padding:0 15px;color:#28533d;background:transparent;font-weight:750}.quick-type:hover{background:#f4f6ed}.quick-type.selected{border-color:var(--color-primary);color:#fff;background:var(--color-primary)}
 .detail-panel h2{margin-bottom:24px}
 .empty-detail{display:grid;min-height:295px;place-items:center;color:#788278;text-align:center}
 .client-data{display:grid;gap:17px;margin:0}
@@ -85,6 +87,7 @@ td{padding:14px 20px;border-bottom:1px solid #eee9df;color:#5e6b61;font-size:.88
 @media(max-width:780px){.app-frame{grid-template-columns:1fr}
 .sidebar{position:static;height:auto;min-height:0;padding:17px 20px}
 .sidebar>div:first-child,.nav-note,.account{display:none}
+.sidebar-quick{width:auto;margin:0 0 0 12px;padding:8px 10px}
 .sidebar-nav{margin:0}
 .workspace{padding:33px 18px 50px}
 .page-header{flex-direction:column}

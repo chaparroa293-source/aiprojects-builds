@@ -57,3 +57,9 @@
 - Added client-scoped Session link/change/unlink capture. A Session reads its nullable `payment_id`; a Payment reads linked Sessions through that foreign key and derives its linked-session count without changing payment amount or Total received.
 - Verified with disposable records: NULL compatibility, link and reload read, one Payment linked to two Sessions, change, unlink, cross-client rejection, `ON DELETE SET NULL`, and reverse counts. All disposable clients, sessions, and payments were removed; a final database count returned zero.
 - No allocation amounts, invoices, balances, debt, reconciliation, global Sessions, or global Payments were introduced.
+
+## 2026-09-09 — PMS-S05: Quick Capture
+
+- Added the persistent shell entry for compact Session and Payment capture using existing domain create operations and tables only.
+- Verified disposable Quick Session (`payment_id = NULL`) and Quick Payment creation, direct retrieval, blank Payment notes as `NULL`, and a ₲ 5.000 payment total input. The test client and its children were removed; the final client count was zero.
+- Production build passed and the strict PMS UI/static audit returned zero findings. No Quick Capture object, history, allocation, balance, or global module was added.
