@@ -410,7 +410,7 @@ ProjectEmployee**. `Request`, `Note`, and `Attachment` appear in
 | Route | View |
 |---|---|
 | `/ingresar` | shared-password gate; the only route reachable without a session |
-| `/` | redirect → `/clientes` |
+| `/` | redirect → `/proyectos` |
 | `/clientes`, `/proveedores`, `/personal` | directory list for that kind (name, phone, linked project names) |
 | `/clientes/[id]`, `/proveedores/[id]`, `/personal/[id]` | full-screen directory record detail (contact data incl. RUC, notes, linked projects; for suppliers also per-project spend and an expense list) |
 | `/proyectos` | card grid of active, non-archived projects |
