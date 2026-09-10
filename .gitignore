@@ -1,0 +1,12 @@
+.DS_Store
+
+node_modules/
+.env*
+!.env.example
+.next/
+.vercel/
+dist/
+.vite/
+
+# temporary guard against accidentally committing the nested repo (WS-002)
+caretta/
