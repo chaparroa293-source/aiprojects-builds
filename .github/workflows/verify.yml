@@ -1,0 +1,39 @@
+name: verify
+
+on:
+  push:
+    paths:
+      - 'obras/**'
+      - '.github/workflows/verify.yml'
+  pull_request:
+    paths:
+      - 'obras/**'
+      - '.github/workflows/verify.yml'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: obras
+    env:
+      # Dummy placeholders only. CI never touches a real database:
+      # `npm run verify` runs `prisma generate` (schema only, no connection),
+      # never `prisma migrate deploy`. All app routes are force-dynamic, so
+      # `next build` does no data fetching. Real secrets live in Vercel.
+      DATABASE_URL: 'postgresql://ci:ci@127.0.0.1:5432/ci?schema=public'
+      DEFAULT_FIRM_ID: 'firm_ci'
+      SESSION_SECRET: 'ci-dummy-session-secret'
+      AUTH_PASSWORD_HASH: 'ci-dummy-password-hash'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: obras/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run verify
