@@ -28,12 +28,12 @@ The implemented core contains four persisted objects: Client, Appointment, Sessi
 - **People:** Client Directory and Client Detail.
 - **Work:** client-owned Appointments for planned work and Sessions for actual session history.
 - **Money:** client-owned Payments recording money actually received. A Session may reference one same-client Payment, and one Payment may be referenced by many Sessions.
-- **Schedule:** a client-scoped Agenda of Appointments.
+- **Schedule:** a Monday–Sunday weekly Calendar across clients plus each Client's Agenda, both reading and writing the same Appointments.
 - **Capture:** persistent Quick Capture entry for creating an ordinary Session or Payment. Quick Capture is an interaction pattern, not a stored object.
 - **Memory:** client-scoped retrieval through Datos, Agenda, Sesiones, and Pagos.
 - **Understanding:** currently limited to the client-scoped `Total recibido` sum and derived Payment-linked Session count/detail.
 
-The latest completed slice is **PMS-S05 Quick Capture**. Global Agenda, global Sessions, global Payments, generalized contacts, communications, follow-ups, general analytics, authentication, deployment, and PWA behavior are not implemented.
+The latest completed slice is **PMS-CAL-002 Calendar v1**. Day/month modes, recurrence, drag-and-drop, conflict/availability behavior, Google Calendar integration, global Sessions, global Payments, generalized contacts, communications, follow-ups, general analytics, authentication, deployment, and PWA behavior are not implemented.
 
 ## Important current semantics
 
@@ -46,7 +46,7 @@ The latest completed slice is **PMS-S05 Quick Capture**. Global Agenda, global S
 ## Approved direction, not yet designed
 
 - **People:** broaden the Directory to other contacts relevant to the practice. No Contact object is approved yet.
-- **Schedule:** develop richer calendar capability, potentially including day/week/month organization. Google Calendar is an important requested integration candidate, but calendar capability and external synchronization are separate decisions.
+- **Schedule:** evolve the implemented weekly Calendar only through approved slices. Google Calendar remains an integration candidate, separate from the local Calendar.
 - **Communication:** help practitioners organize work-related communication, progressing conceptually from **Save → Send → Schedule → Automate**. Possible capabilities include saved email drafts, reusable communications, manual sending, scheduled sending, and later bounded automation.
 - **Capture:** continue treating quick capture as a cross-system interaction pattern over real domain objects.
 - **Memory:** make accumulated practice activity easier to retrieve and understand without inventing a global History object.
@@ -73,7 +73,7 @@ The current model does not include invoices, debt, balances, reconciliation, ses
 ## Known unknowns and unresolved decisions
 
 - Broader Contact/Directory domain model and which non-client people belong in it.
-- Calendar interaction model, including day/week/month behavior.
+- Calendar evolution beyond the implemented weekly mode, including whether day or month modes are needed.
 - Google Calendar integration and synchronization semantics, directionality, conflicts, ownership, and failure recovery.
 - Communication/email domain model and retrieval model.
 - Email provider and sending architecture.
@@ -81,6 +81,7 @@ The current model does not include invoices, debt, balances, reconciliation, ses
 - FollowUp semantics, relationships, lifecycle, and retrieval.
 - Whether Notes remain fields/contextual records or become an independent object.
 - Analytics questions, KPI definitions, source/filter/operation/meaning contracts, and presentation.
+- Record deletion: whether Client / Appointment / Session / Payment support hard delete or rely on existing state transitions (`inactivo`, `cancelada`); related-record consequences; and the DB grant/RLS changes it would require. Deletion is currently unsupported for every object (see `TECHNICAL_SPEC.md` DEFERRED → Deletion).
 - Authentication, practitioner identity, workspace ownership, and authorization model.
 - Production RLS and access-control policy.
 - Multi-customer hosting and isolation architecture.

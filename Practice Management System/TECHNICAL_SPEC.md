@@ -169,7 +169,7 @@ RULE-023: A payment association means only that the Session references a recorde
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Client | Implemented | Directory/detail | Implemented | Unsupported | Name, email, phone | estado | Recent or name | — |
 | Session | Implemented | Client history/detail-edit | Implemented | Unsupported | Unsupported | Unsupported | fecha desc, hora_inicio desc | Implemented |
-| Appointment | Implemented | Client Agenda/detail-edit | Implemented | Unsupported | Unsupported | Unsupported | fecha asc, hora_inicio asc | Implemented |
+| Appointment | Implemented | Client Agenda/detail-edit and weekly Calendar | Implemented | Unsupported | Unsupported | Week date range | fecha asc, hora_inicio asc | Implemented |
 | Payment | Implemented | Client Pagos/detail-edit | Implemented | Unsupported | Unsupported | Unsupported | fecha desc | Implemented |
 
 ## CAPTURE CONTRACTS
@@ -254,7 +254,19 @@ DISPLAY: fecha, hora_inicio, estado, duration only when present; full form on ed
 ACTIONS: create Appointment, open Appointment, update Appointment
 FILTER: none
 SORT/ORDER: fecha ascending, then hora_inicio ascending
-NAVIGATION: remains inside owning Client Detail; no global Agenda view
+NAVIGATION: Client Agenda ↔ relevant Calendar week
+```
+
+### Weekly Calendar
+
+```text
+PRIMARY DATA: Appointments across Clients for one inclusive Monday–Sunday range
+DISPLAY: seven named days; time, Client, estado, and optional duration per Appointment
+ACTIONS: previous/current/next week; create with Client selection and optional day prefill; open/update/reschedule/cancel; open owning Client Agenda
+FILTER: fecha >= week start and fecha <= week end
+SORT/ORDER: fecha ascending, then hora_inicio ascending
+NAVIGATION: URL-backed #calendario?week=YYYY-MM-DD; Calendar ↔ owning Client Agenda
+RESPONSIVE: seven-column board when wide; vertically grouped days when narrow
 ```
 
 ### Client Payments and Payment Create/Detail/Edit
@@ -286,10 +298,10 @@ GLOBAL VIEW: no
 PAYMENT ASSOCIATION: session.payment_id is nullable and returned with the Session; eligible choices are Payments scoped to the current Client
 
 APPOINTMENT
-PRIMARY: Client Detail → Agenda
-SCOPE: appointment.client_id = current client.id
+PRIMARY: Calendario; Client Detail → Agenda remains the owner-scoped retrieval path
+SCOPE: Calendar uses an inclusive Monday–Sunday fecha range; Client Agenda uses appointment.client_id = current client.id
 ORDER: fecha ascending, hora_inicio ascending
-GLOBAL VIEW: no
+GLOBAL VIEW: weekly only
 
 PAYMENT
 PRIMARY: Client Detail → Pagos
@@ -386,12 +398,19 @@ CHECKPOINT: ad94d8a
 PMS-S05 — Quick Capture — COMPLETE
 Shell action → Select Client and Session/Payment → Create normal object → Retrieve in Client Detail → Reload
 CHECKPOINT: 555dc0d
+
+PMS-CAL-002 — Calendar v1 — COMPLETE
+Calendario → Monday–Sunday Appointment range → Create/Edit/Reschedule/Cancel → Client Agenda consistency → Reload
 ```
 
 ## DEFERRED
 
 Planned or unresolved at the technical level: authentication; user/workspace ownership; RLS production hardening; follow-ups; notes; analytics implementation; Cloudflare deployment; PWA; production deployment.
 
-Deferred: Global Agenda; Appointment → Session conversion; Global Payments.
+Deferred: Calendar day/month modes; recurrence; drag-and-drop; conflict/availability behavior; Google Calendar integration; Appointment → Session conversion; Global Payments.
+
+### Deletion (unresolved — PMS-UX-004 audit)
+
+Record deletion is **not implemented for any object** and its semantics are not yet defined. The database withholds `DELETE` from the browser `anon` role for all four tables (`docs/ENVIRONMENT.md`, `docs/DATABASE.md`), `client-api.js` exposes no delete function, and the OPERATIONS table lists Delete as `Unsupported` for Client, Session, Appointment, and Payment. The only modeled deletion *consequence* is `REL-004` (`sessions.payment_id ON DELETE SET NULL`); the Payment delete capability itself is still not granted. A future explicitly approved slice must decide, per object: hard delete vs. an existing `estado` transition (Appointment/Session already have `cancelada`, Client has `inactivo`); FK behavior for `appointments.client_id` / `sessions.client_id` / `payments.client_id` (currently `NO ACTION` → a Client with any related record cannot be hard-deleted); whether a deleted Payment silently drops from `Total recibido` history; and the required `GRANT`/RLS changes. Until then, no delete controls are added.
 
 `Built` means implemented in code and schema; `verified` means evidence is recorded in the build log; `planned` and `deferred` are not implementation status.

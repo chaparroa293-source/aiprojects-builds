@@ -86,6 +86,15 @@ export async function listClientAppointments(clientId) {
   return data
 }
 
+export async function listAppointmentsByDateRange(startDate, endDate) {
+  const { data, error } = await supabase.schema('practice_management')
+    .from('appointments').select(appointmentFields)
+    .gte('fecha', startDate).lte('fecha', endDate)
+    .order('fecha', { ascending: true }).order('hora_inicio', { ascending: true })
+  if (error) throw databaseError(error)
+  return data
+}
+
 export async function createAppointment(appointment) {
   const { data, error } = await supabase.schema('practice_management')
     .from('appointments').insert(appointment).select(appointmentFields).single()
