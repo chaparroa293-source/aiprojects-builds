@@ -63,3 +63,10 @@
 - Added the persistent shell entry for compact Session and Payment capture using existing domain create operations and tables only.
 - Verified disposable Quick Session (`payment_id = NULL`) and Quick Payment creation, direct retrieval, blank Payment notes as `NULL`, and a ₲ 5.000 payment total input. The test client and its children were removed; the final client count was zero.
 - Production build passed and the strict PMS UI/static audit returned zero findings. No Quick Capture object, history, allocation, balance, or global module was added.
+
+## 2026-09-10 — Product Definition Gate reconciliation
+
+- Established `docs/PRODUCT.md` as the compact Product Definition Gate for a Spanish-first, Paraguay-oriented, single-practitioner Practice Management System and recorded the Capture → Organize → Schedule → Communicate → Operate → Remember → Understand product loop.
+- Reconciled durable summaries with the implemented PMS-S05 state and kept `TECHNICAL_SPEC.md` limited to the implemented Client, Appointment, Session, and Payment domain grammar.
+- Preserved broader Directory, calendar and Google Calendar integration, communication, follow-up, notes, analytics, access-control, hosting, and PWA direction as unresolved product design rather than speculative objects or implementation commitments.
+- No application code, database, migration, Supabase configuration, dependency, or runtime behavior changed.

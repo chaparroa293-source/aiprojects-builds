@@ -1,6 +1,6 @@
 # Practice Management System
 
-A reusable practice-management system for independent, session-based service professionals. Slices 1–2 implement a persisted Client Directory and client-owned Session history in the shared AI Builds Supabase project.
+A Spanish-first practice-management system for independent, session-based professionals, initially oriented toward individual practitioners in Paraguay. It is the practitioner's operational workspace and memory, not primarily a CRM.
 
 ## Start here
 
@@ -23,5 +23,6 @@ Use `npm run build` for the production build. Local configuration belongs in the
 - Tracked as a project folder in the parent `aiprojects-builds` repository on `main`.
 - GitHub remote: `origin` (`https://github.com/chaparroa293-source/aiprojects-builds.git`).
 - Stack: React, Vite, npm, and Supabase Postgres.
-- Implemented workflows: create, list, view, edit, and reload a persisted client; record, view, edit, and reload sessions within that client's detail.
+- Implemented workflows: Client Directory and Detail; client-owned Appointments, Sessions, and Payments; Session ↔ Payment association; and Quick Capture of ordinary Sessions and Payments.
+- Latest completed slice: PMS-S05 Quick Capture (`555dc0d`).
 - Authentication and deployment remain deferred.

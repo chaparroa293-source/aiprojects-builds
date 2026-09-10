@@ -22,12 +22,12 @@ PWA: Planned, not implemented
 
 | Object | Type | Status | Parent |
 | --- | --- | --- | --- |
-| Client | Entity | Built | — |
-| Session | Event | Built | Client |
+| Client | Entity | Built + Verified | — |
+| Session | Event | Built + Verified | Client |
 | Payment | Transaction | Built + Verified | Client |
-| FollowUp | Event | Planned | TBD |
-| Note | Record | Planned | TBD |
 | Appointment | Event | Built + Verified | Client |
+
+Only implemented persisted objects belong in this registry. Product direction whose object semantics are unresolved remains in `docs/PRODUCT.md`.
 
 ## OBJECT SPECIFICATIONS
 
@@ -357,6 +357,9 @@ APP STORE DISTRIBUTION: not required initially
 | Client | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | Session | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Appointment | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Payment | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+Quick Capture is a verified alternate create path for Session and Payment, not an object row in this table.
 
 Verification evidence is recorded in `docs/BUILD_LOG.md`.
 
@@ -375,11 +378,19 @@ Client → Agenda → Create Appointment → Persist → Edit → Persist → Re
 
 SLICE 4 — Client Payments — COMPLETE
 Client → Pagos → Create Payment → Persist → Edit → Persist → Reload
+
+PMS-S04 — Session ↔ Payment allocation — COMPLETE
+Session → Link/change/unlink same-client Payment → Persist → Reverse Payment read → Reload
+CHECKPOINT: ad94d8a
+
+PMS-S05 — Quick Capture — COMPLETE
+Shell action → Select Client and Session/Payment → Create normal object → Retrieve in Client Detail → Reload
+CHECKPOINT: 555dc0d
 ```
 
 ## DEFERRED
 
-Planned: authentication; user/workspace ownership; RLS production hardening; follow-ups; notes; Quick Capture UI; analytics implementation; Cloudflare deployment; PWA; production deployment.
+Planned or unresolved at the technical level: authentication; user/workspace ownership; RLS production hardening; follow-ups; notes; analytics implementation; Cloudflare deployment; PWA; production deployment.
 
 Deferred: Global Agenda; Appointment → Session conversion; Global Payments.
 
