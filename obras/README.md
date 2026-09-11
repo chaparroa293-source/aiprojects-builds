@@ -4,13 +4,26 @@ Gestión de obras para un estudio de ingeniería/arquitectura (Paraguay, guaran�
 
 ## Documentación
 
-- **[TECHNICAL_SPEC.md](TECHNICAL_SPEC.md)** — la verdad de dominio vigente:
-  qué objetos existen, qué garantiza el sistema, cómo se captura y se
-  recupera cada cosa, qué se deriva. Documento de cambio lento (ver su
-  propio encabezado para cuándo actualizarlo).
-- **[specs/](specs/)** — documentación por slice (`context.md` / `spec.md`
-  / `plan.md`). `specs/v1/` tiene los documentos de planificación
-  originales del producto.
+### Mapa de autoridad
+
+- **Actual — [TECHNICAL_SPEC.md](TECHNICAL_SPEC.md):** semántica de
+  producto y dominio vigente: objetos, relaciones, invariantes, captura,
+  recuperación, derivaciones y acceso. Es el documento de cambio lento.
+- **Ejecutable — `prisma/schema.prisma`, `prisma/migrations/`, `app/` y
+  `lib/`:** implementación y persistencia reales. Ante una discrepancia,
+  investigar y reconciliar el spec; no inventar una tercera fuente.
+- **UX actual en revisión —
+  [docs/UX_UI_REFINEMENT_SPEC.md](docs/UX_UI_REFINEMENT_SPEC.md):** contrato
+  recomendado para trabajo UX/UI posterior; no cambia dominio ni autoriza
+  implementación hasta aprobar el slice.
+- **Slices — [specs/](specs/):** contratos acotados de cambio. Los documentos
+  completados y `specs/v1/` son historial de decisiones, no verdad actual.
+- **Evidencia de verificación — [docs/SCENARIO_TESTS.md](docs/SCENARIO_TESTS.md)
+  y [docs/SCENARIO_TEST_RESULTS.md](docs/SCENARIO_TEST_RESULTS.md):** diseño
+  de pruebas y ejecuciones registradas; no sustituyen el spec ni el código.
+- **Histórico:** Git conserva commits; los handoffs, planes originales y
+  feedback de rondas anteriores explican decisiones pasadas sin gobernar el
+  comportamiento actual.
 
 ## Estado
 
@@ -21,8 +34,9 @@ proyectos, búsqueda global. Pendiente: Pedidos, Notas, Adjuntos.
 ## Stack
 
 Next.js (App Router) + Prisma + Postgres (Neon en producción). Una sola
-firma (`firm_id` en todas las tablas). Cuentas nombradas sin roles
-(ver TECHNICAL_SPEC.md, sección User) — no hay alta pública.
+firma (`firm_id` en todas las tablas). El acceso es una sola contraseña
+compartida: una cookie firmada y temporal protege toda la aplicación, sin
+cuentas, roles, identidad ni atribución por persona. No hay alta pública.
 
 ## Desarrollo local
 
@@ -52,10 +66,9 @@ Otra opción: apuntar `DATABASE_URL` a cualquier Postgres propio.
 
 ## Despliegue
 
-Vercel + Neon Postgres. El build corre `prisma generate && prisma
-migrate deploy && next build` (ver OBRAS-013 — el `generate` explícito
-existe porque un `node_modules` cacheado por Vercel puede saltearse el
-postinstall que normalmente lo dispara).
+Vercel + Neon Postgres. El script de build actual corre
+`prisma migrate deploy && next build`. La generación explícita de Prisma se
+ejecuta en `npm run verify`, antes del build de CI.
 
 **Preview aislado de Production (OBRAS-013).** Cada Preview deployment
 usa su propia rama de Neon (copy-on-write del esquema y los datos de
@@ -76,3 +89,4 @@ deployment de Preview correspondiente.
 | `npm run db:local` / `db:local:stop` | Postgres local sin Docker (binario embebido) |
 | `npm run db:seed` | Carga registros de ejemplo |
 | `npm run lint` / `typecheck` | Chequeos |
+| `npm run verify` | Lint, typecheck, `prisma generate` y build sin migrar |

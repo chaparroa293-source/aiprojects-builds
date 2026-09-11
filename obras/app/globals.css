@@ -2,36 +2,44 @@
    Densidad compacta a propósito: acá se escanean números y listas. */
 
 :root {
-  --bg: #f4f4f1;
+  --bg: #eae7e2;
   --surface: #ffffff;
-  --surface-alt: #fafaf8;
-  --border: #e0e0da;
-  --border-strong: #cfcfc6;
-  --text: #1c1c1a;
-  --text-muted: #6d6d65;
+  --surface-alt: #f5f3ef;
+  --border: #d8d2ca;
+  --border-strong: #827a70;
+  --text: #1a1a1a;
+  --text-muted: #625d57;
   /* Valores ausentes: más claros que el gris de texto secundario,
      para que un "—" no pese lo mismo que un dato real. */
   --faint: #b8b8b0;
-  --accent: #2f6f4f;
-  --accent-soft: #e6f0ea;
-  --accent-fg: #ffffff;
+  --accent: #fe531d;
+  --accent-soft: #fff0e8;
+  --accent-fg: #1a1a1a;
+  --accent-ink: #a9360d;
+  --success: #246447;
+  --success-soft: #eaf2ec;
+  --completed: #39546a;
+  --completed-soft: #edf1f5;
+  --archive: #625d57;
+  --archive-soft: #eeeae4;
+  --warning: #83500c;
+  --warning-soft: #fff3d8;
   --danger: #a8322d;
   --danger-soft: #f8ecec;
-  --radius: 7px;
-  --sidebar-w: 216px;
+  --radius: 6px;
+  --sidebar-w: 224px;
+  --sidebar-rail-w: 72px;
 
-  /* Barra lateral: verde muy oscuro y desaturado, derivado del acento.
-     Es la única superficie oscura de la app — le da columna vertebral
-     sin cambiarle el peso al área de trabajo. Sobre ese fondo el verde
-     del acento no rinde, así que lo "encendido" es --accent-soft. */
-  --sidebar-bg: #1f2b24;
-  --sidebar-edge: #16201a;
-  --sidebar-text: #97a69d;
-  --sidebar-text-strong: #eef2ef;
+  /* La barra lateral es la única superficie estructural oscura; el naranja
+     queda reservado para acciones principales y la ubicación actual. */
+  --sidebar-bg: #1a1a1a;
+  --sidebar-edge: #2e2e2e;
+  --sidebar-text: #c9c3ba;
+  --sidebar-text-strong: #f5f3ef;
   /* 5.07:1 contra el fondo — a 10.5px hace falta 4.5:1. */
-  --sidebar-label: #8a9c92;
+  --sidebar-label: #c9c3ba;
   --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
-  --sidebar-active-bg: rgba(255, 255, 255, 0.1);
+  --sidebar-active-bg: #2e2e2e;
 }
 
 * {
@@ -51,7 +59,14 @@ body {
     Arial, sans-serif;
   font-size: 14px;
   line-height: 1.45;
+  scrollbar-color: var(--border-strong) var(--surface-alt);
+  scrollbar-width: thin;
 }
+
+*::-webkit-scrollbar { width: 12px; height: 12px; }
+*::-webkit-scrollbar-track { background: var(--surface-alt); }
+*::-webkit-scrollbar-thumb { background: var(--border-strong); border: 3px solid var(--surface-alt); border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 a {
   color: inherit;
@@ -70,7 +85,7 @@ a:hover {
 }
 
 .app-shell[data-collapsed="true"] {
-  grid-template-columns: 0 1fr;
+  grid-template-columns: var(--sidebar-rail-w) 1fr;
 }
 
 .sidebar {
@@ -79,15 +94,60 @@ a:hover {
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  overflow: hidden;
+  gap: 16px;
+  min-height: 100vh;
+  overflow-y: auto;
   white-space: nowrap;
 }
 
 .app-shell[data-collapsed="true"] .sidebar {
-  padding-left: 0;
-  padding-right: 0;
-  border-right: none;
+  padding: 16px 12px;
+}
+
+.app-shell[data-collapsed="true"] .sidebar-brand {
+  height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0;
+}
+.app-shell[data-collapsed="true"] .sidebar-brand::after {
+  content: "O";
+  font-size: 16px;
+  font-weight: 700;
+}
+.app-shell[data-collapsed="true"] .sidebar-quickadd {
+  padding: 0;
+}
+.app-shell[data-collapsed="true"] .sidebar-quickadd .quick-add-trigger {
+  min-height: 44px;
+  padding: 0;
+  font-size: 0;
+}
+.app-shell[data-collapsed="true"] .sidebar-quickadd .quick-add-trigger::before {
+  content: "+";
+  font-size: 24px;
+  line-height: 1;
+}
+.app-shell[data-collapsed="true"] .sidebar-section-label,
+.app-shell[data-collapsed="true"] .sidebar-session {
+  display: none;
+}
+.app-shell[data-collapsed="true"] .sidebar-link {
+  justify-content: center;
+  gap: 0;
+  padding: 10px;
+  font-size: 0;
+}
+.app-shell[data-collapsed="true"] .sidebar-icon {
+  width: 20px;
+  height: 20px;
+}
+.app-shell[data-collapsed="true"] .sidebar-link[data-active="true"]::after {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .sidebar-brand {
@@ -97,6 +157,26 @@ a:hover {
   padding: 0 8px;
   color: var(--sidebar-text-strong);
 }
+.sidebar-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+.sidebar-close {
+  display: none;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--sidebar-text-strong);
+  cursor: pointer;
+}
+.sidebar-close:hover { background: var(--sidebar-active-bg); }
+.sidebar-close:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
 
 .sidebar-quickadd {
   padding: 0 4px;
@@ -127,7 +207,8 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 10px;
+  min-height: 44px;
+  padding: 10px;
   border-radius: var(--radius);
   color: var(--sidebar-text);
   font-weight: 500;
@@ -139,8 +220,17 @@ a:hover {
 }
 .sidebar-link[data-active="true"] {
   background: var(--sidebar-active-bg);
-  color: var(--accent-soft);
+  color: var(--sidebar-text-strong);
   font-weight: 600;
+  position: relative;
+}
+.sidebar-link[data-active="true"]::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-left: auto;
 }
 .sidebar-icon {
   flex: none;
@@ -150,8 +240,12 @@ a:hover {
    compite con la navegación. */
 .sidebar-logout {
   margin-top: auto;
-  padding-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(245, 243, 239, 0.16);
 }
+.sidebar-session { display: grid; gap: 2px; padding: 0 10px 10px; }
+.sidebar-session-title { color: var(--sidebar-text-strong); font-size: 12px; font-weight: 600; }
+.sidebar-session-copy { color: var(--sidebar-text); font-size: 12px; }
 .sidebar-logout-btn {
   width: 100%;
   background: none;
@@ -161,18 +255,18 @@ a:hover {
   text-align: left;
   cursor: pointer;
 }
+.sidebar-logout-btn { color: #ffb5aa; }
+.sidebar-logout-btn:hover { color: #fff0ed; }
 
-/* Sobre el fondo oscuro el primario se invierte: fondo claro y texto
-   verde. Sigue siendo lo más brillante de la columna, que es lo que
-   corresponde a la acción principal. */
+/* En la barra lateral el primario conserva su papel de acción principal. */
 .sidebar .btn-primary {
-  background: var(--accent-soft);
-  border-color: var(--accent-soft);
-  color: var(--accent);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
 }
 .sidebar .btn-primary:hover {
-  background: var(--surface);
-  border-color: var(--surface);
+  background: #ff6b3d;
+  border-color: #ff6b3d;
   filter: none;
 }
 
@@ -196,7 +290,8 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 24px;
+  min-height: 56px;
+  padding: 8px 24px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   position: sticky;
@@ -209,8 +304,8 @@ a:hover {
   flex-direction: column;
   justify-content: center;
   gap: 3.5px;
-  width: 30px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   padding: 0 5px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -218,6 +313,8 @@ a:hover {
   cursor: pointer;
   flex: none;
 }
+.topbar-quickadd { display: none; flex: none; }
+.topbar-quickadd .quick-add-trigger { min-height: 40px; }
 .hamburger span {
   display: block;
   height: 1.75px;
@@ -238,13 +335,15 @@ a:hover {
 .search {
   position: relative;
   flex: 1;
+  min-width: 0;
   max-width: 460px;
 }
 
 .search-input {
   width: 100%;
   font: inherit;
-  padding: 6px 30px 6px 11px;
+  min-height: 40px;
+  padding: 8px 34px 8px 11px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg);
@@ -433,7 +532,8 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 12px;
+  min-height: 36px;
+  padding: 7px 12px;
   border-radius: var(--radius);
   border: 1px solid var(--border-strong);
   background: var(--surface);
@@ -457,8 +557,9 @@ a:hover {
   color: var(--accent-fg);
 }
 .btn-primary:hover {
-  filter: brightness(1.07);
-  background: var(--accent);
+  filter: none;
+  background: #ff6b3d;
+  border-color: #ff6b3d;
 }
 .btn-danger {
   background: var(--surface);
@@ -959,18 +1060,21 @@ table.grid .num {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 44px 16px;
+  padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
   z-index: 60;
   overflow-y: auto;
 }
 
 .popup {
   background: var(--surface);
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border-strong);
   width: 100%;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
 }
 
 .popup-head {
@@ -1002,8 +1106,8 @@ table.grid .num {
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
-  width: 26px;
-  height: 26px;
+  width: 44px;
+  height: 44px;
   border-radius: 5px;
   flex: none;
 }
@@ -1015,6 +1119,7 @@ table.grid .num {
 
 .popup-body {
   padding: 16px;
+  overflow-y: auto;
 }
 
 .popup-form {
@@ -1354,12 +1459,60 @@ table.grid .num {
 /* El fondo del cajón sólo existe en pantalla angosta. */
 .sidebar-scrim {
   display: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Tablet keeps the workspace wide: navigation becomes a temporary overlay,
+   while capture remains available in the top bar. */
+@media (max-width: 1199px) {
+  .app-shell[data-collapsed="true"] { grid-template-columns: var(--sidebar-rail-w) 1fr; }
+  .app-shell[data-collapsed="false"] { grid-template-columns: var(--sidebar-rail-w) 1fr; }
+  .app-shell[data-collapsed="false"] .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--sidebar-w);
+    z-index: 55;
+    padding: 16px 12px;
+    border-right: 1px solid var(--sidebar-edge);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  }
+  .app-shell[data-collapsed="false"] .sidebar-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 26, 26, 0.42);
+    z-index: 54;
+  }
+  .main { padding: 20px 20px 56px; max-width: 1280px; }
 }
 
 /* ── Narrow screens ──────────────────────────────────────── */
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .app-shell {
     grid-template-columns: 0 1fr;
+  }
+  .app-shell[data-collapsed="true"] {
+    grid-template-columns: 0 1fr;
+  }
+  .app-shell[data-collapsed="true"] .sidebar {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .app-shell[data-collapsed="false"] .sidebar {
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .app-shell[data-collapsed="false"] .sidebar-close {
+    display: inline-flex;
+  }
+  .sidebar-quickadd,
+  .app-shell[data-collapsed="true"] .sidebar-quickadd {
+    display: none;
+  }
+  .topbar-quickadd {
+    display: block;
   }
   .app-shell[data-collapsed="false"] .sidebar {
     position: fixed;
@@ -1396,6 +1549,8 @@ table.grid .num {
   .topbar {
     padding: 10px 14px;
   }
+  .topbar { gap: 8px; }
+  .topbar-quickadd .quick-add-trigger { min-width: 0; padding-inline: 10px; }
   .panel {
     padding: 14px;
   }
@@ -1405,6 +1560,15 @@ table.grid .num {
   table.grid th,
   table.grid td {
     padding: 9px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
 

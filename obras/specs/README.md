@@ -8,7 +8,10 @@ specs/<slice>/spec.md       — what it must do; acceptance criteria
 specs/<slice>/plan.md       — how it gets built; infra/order decisions
 ```
 
-`specs/v1/` holds the original whole-product planning docs (slices 1–8).
+`specs/v1/` holds the original whole-product planning docs (slices 1–8):
+valuable **HISTORICAL** context, not current domain authority. A completed
+slice spec is likewise historical evidence of its change; current semantics
+live in `../TECHNICAL_SPEC.md` and executable code/migrations.
 
 ## Reasoning order for a slice (discipline, not nine more files)
 

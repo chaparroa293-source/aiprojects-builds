@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,6 +11,7 @@ import {
   LogOut,
   Truck,
   Users,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -50,13 +51,16 @@ function NavIcon({ icon: Icon }: { icon: LucideIcon }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   // La pantalla de ingreso no lleva navegación: todavía no hay a dónde ir.
   const bare = pathname === "/ingresar";
 
   // Restaurar la preferencia al montar. En pantalla angosta la barra
   // arranca cerrada (es un cajón que tapa el contenido).
   useEffect(() => {
-    const narrow = window.matchMedia("(max-width: 720px)").matches;
+    const compact = window.matchMedia("(max-width: 1199px)").matches;
     let stored: string | null = null;
     try {
       stored = localStorage.getItem(STORE_KEY);
@@ -64,7 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       /* sin almacenamiento */
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCollapsed(stored === null ? narrow : stored === "1");
+    setCollapsed(stored === null ? compact : stored === "1");
   }, []);
 
   function toggleSidebar() {
@@ -79,6 +83,50 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }
 
+  function closeNavigation() {
+    if (window.matchMedia("(max-width: 1199px)").matches) {
+      setCollapsed(true);
+    }
+  }
+
+  useEffect(() => {
+    const narrow = window.matchMedia("(max-width: 767px)").matches;
+    if (collapsed || !narrow) return;
+
+    const menuButton = menuButtonRef.current;
+    closeButtonRef.current?.focus();
+    const focusable = () =>
+      Array.from(
+        sidebarRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setCollapsed(true);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      menuButton?.focus();
+    };
+  }, [collapsed]);
+
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
 
@@ -88,15 +136,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="app-shell" data-collapsed={collapsed}>
       {/* Fondo que cierra el cajón en pantalla angosta (clic afuera). */}
       {!collapsed ? (
-        <div
+        <button
+          type="button"
           className="sidebar-scrim"
           onClick={() => setCollapsed(true)}
-          aria-hidden="true"
+          aria-label="Cerrar menú"
         />
       ) : null}
 
-      <aside className="sidebar">
-        <div className="sidebar-brand">Obras</div>
+      <aside className="sidebar" ref={sidebarRef} aria-label="Navegación principal">
+        <div className="sidebar-brand-row">
+          <div className="sidebar-brand">Obras</div>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            className="sidebar-close"
+            onClick={() => setCollapsed(true)}
+            aria-label="Cerrar menú"
+            title="Cerrar menú"
+          >
+            <X size={20} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        </div>
 
         <div className="sidebar-quickadd">
           <UniversalAdd />
@@ -108,6 +169,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             href="/proyectos"
             className="sidebar-link"
             data-active={isActive("/proyectos")}
+            aria-current={isActive("/proyectos") ? "page" : undefined}
+            aria-label="Proyectos"
+            title="Proyectos"
+            onClick={closeNavigation}
           >
             <NavIcon icon={HardHat} />
             Proyectos
@@ -116,6 +181,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             href="/historial"
             className="sidebar-link"
             data-active={isActive("/historial")}
+            aria-current={isActive("/historial") ? "page" : undefined}
+            aria-label="Historial"
+            title="Historial"
+            onClick={closeNavigation}
           >
             <NavIcon icon={Archive} />
             Historial
@@ -124,6 +193,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             href="/panel"
             className="sidebar-link"
             data-active={isActive("/panel")}
+            aria-current={isActive("/panel") ? "page" : undefined}
+            aria-label="Panel"
+            title="Panel"
+            onClick={closeNavigation}
           >
             <NavIcon icon={Gauge} />
             Panel
@@ -138,6 +211,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href={`/${kind}`}
               className="sidebar-link"
               data-active={isActive(`/${kind}`)}
+              aria-current={isActive(`/${kind}`) ? "page" : undefined}
+              aria-label={DIRECTORY[kind].navLabel}
+              title={DIRECTORY[kind].navLabel}
+              onClick={closeNavigation}
             >
               <NavIcon icon={DIRECTORY_ICON[kind]} />
               {DIRECTORY[kind].navLabel}
@@ -145,10 +222,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <form action={logout} className="sidebar-logout">
-          <button type="submit" className="sidebar-link sidebar-logout-btn">
+        <form action={logout} className="sidebar-logout" noValidate>
+          <div className="sidebar-session" aria-label="Estado de acceso">
+            <span className="sidebar-session-title">Acceso al estudio</span>
+            <span className="sidebar-session-copy">Sesión compartida</span>
+          </div>
+          <button
+            type="submit"
+            className="sidebar-link sidebar-logout-btn"
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+          >
             <NavIcon icon={LogOut} />
-            Salir
+            Cerrar sesión
           </button>
         </form>
       </aside>
@@ -156,6 +242,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="content">
         <header className="topbar">
           <button
+            ref={menuButtonRef}
             type="button"
             className="hamburger"
             onClick={toggleSidebar}
@@ -168,6 +255,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span />
           </button>
           <GlobalSearch />
+          <div className="topbar-quickadd">
+            <UniversalAdd />
+          </div>
         </header>
         <main className="main">{children}</main>
       </div>
