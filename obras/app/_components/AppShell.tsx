@@ -71,21 +71,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setCollapsed(stored === null ? compact : stored === "1");
   }, []);
 
+  function setSidebarCollapsed(next: boolean) {
+    setCollapsed(next);
+    try {
+      localStorage.setItem(STORE_KEY, next ? "1" : "0");
+    } catch {
+      /* ignorar */
+    }
+  }
+
   function toggleSidebar() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(STORE_KEY, next ? "1" : "0");
-      } catch {
-        /* ignorar */
-      }
-      return next;
-    });
+    setSidebarCollapsed(!collapsed);
   }
 
   function closeNavigation() {
     if (window.matchMedia("(max-width: 1199px)").matches) {
-      setCollapsed(true);
+      setSidebarCollapsed(true);
     }
   }
 
@@ -104,7 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        setCollapsed(true);
+        setSidebarCollapsed(true);
         return;
       }
       if (event.key !== "Tab") return;
@@ -139,7 +140,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           className="sidebar-scrim"
-          onClick={() => setCollapsed(true)}
+          onClick={() => setSidebarCollapsed(true)}
           aria-label="Cerrar menú"
         />
       ) : null}
@@ -151,7 +152,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ref={closeButtonRef}
             type="button"
             className="sidebar-close"
-            onClick={() => setCollapsed(true)}
+            onClick={() => setSidebarCollapsed(true)}
             aria-label="Cerrar menú"
             title="Cerrar menú"
           >

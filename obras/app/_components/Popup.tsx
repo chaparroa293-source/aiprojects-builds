@@ -92,8 +92,10 @@ export function Popup({
   return createPortal(
     <div
       className="popup-overlay"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
       }}
     >
       <div
